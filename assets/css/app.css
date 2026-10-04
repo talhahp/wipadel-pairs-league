@@ -149,12 +149,45 @@ h1, h2, h3, h4 {
   flex-wrap: wrap;
 }
 
-.brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+
+/* The club logo is artwork for light backgrounds - navy figure, navy wordmark -
+   so it gets its own plate rather than being recoloured. */
+.brand__plate {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 9px 13px;
+  border-radius: 13px;
+  background: linear-gradient(170deg, #FFFFFF, var(--text));
+  box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(61, 148, 255, 0.22);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+
+.brand:hover .brand__plate {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(120, 247, 0, 0.35);
+}
+
+.brand__plate img {
+  display: block;
+  height: 62px;
+  width: auto;
+}
+
+.brand__text { display: flex; flex-direction: column; min-width: 0; }
 
 .brand__club {
   font-family: var(--font-display);
-  font-size: clamp(30px, 6.4vw, 54px);
-  line-height: 0.86;
+  font-size: clamp(27px, 5.4vw, 46px);
+  line-height: 0.88;
   text-transform: uppercase;
   letter-spacing: 0.01em;
   background: linear-gradient(168deg, #EDF2FA 8%, #9CC6FF 52%, var(--azure) 112%);
@@ -165,11 +198,11 @@ h1, h2, h3, h4 {
 
 .brand__league {
   font-family: var(--font-display);
-  font-size: clamp(14px, 2.5vw, 19px);
+  font-size: clamp(12px, 2.2vw, 17px);
   text-transform: uppercase;
   color: var(--lime);
-  letter-spacing: 0.1em;
-  padding-bottom: 3px;
+  letter-spacing: 0.13em;
+  margin-top: 3px;
 }
 
 .masthead__meta {
@@ -940,6 +973,9 @@ select {
 @media (max-width: 720px) {
   body { font-size: 15px; }
   .masthead__inner { align-items: flex-start; flex-direction: column; gap: 10px; padding: 20px var(--gutter) 16px; }
+  .brand { gap: 11px; }
+  .brand__plate { padding: 7px 10px; border-radius: 10px; }
+  .brand__plate img { height: 42px; }
   .myteam-head { padding: 16px; }
   .myteam-rank { text-align: left; }
   .fx { grid-template-columns: 34px 1fr; gap: 10px; padding: 12px; }

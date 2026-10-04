@@ -147,6 +147,8 @@ limiting on guessing it. Use something long, and don't reuse a password.
 ```
 index.html              Shell: header, nav, footer
 assets/css/app.css      All styling, on the Wi Padel logo palette
+assets/img/             Club logo, favicons and the link-preview card,
+                        generated from Pictures/logo003.png
 assets/js/
   config.js             Supabase URL + anon key          <- edit this
   core.js               Scoring, standings, round robin   (pure, tested)
@@ -179,6 +181,8 @@ it will not let you wipe played results by accident.
 
 ## Notes
 
+* The club logo is artwork for light backgrounds — navy figure, navy wordmark — so on
+  this dark page it sits on a light plate rather than being recoloured.
 * Hash routing (`#/standings`) so it works on any static host with no redirect rules.
 * Dark theme only, built around the logo's navy / azure / orange / lime.
 * The page reloads the league when the tab regains focus, so a table left open
