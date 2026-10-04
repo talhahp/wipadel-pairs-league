@@ -112,8 +112,7 @@ kept for the alternative of dragging this folder onto
 2. Add each pair's **WhatsApp numbers** — without them players cannot reach each other,
    which is the one thing the site is for.
 3. Add the **Beginner** pairs, then press **Generate fixtures** for that division.
-4. Under **Settings**, set the Playtomic **promo code**.
-5. Put the link in the WhatsApp group description.
+4. Put the link in the WhatsApp group description.
 
 ---
 

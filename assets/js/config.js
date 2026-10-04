@@ -12,8 +12,8 @@
  * your own browser so you can click everything before wiring up the database.
  * Nothing in demo mode is shared with anyone else.
  */
-export const SUPABASE_URL = '';
-export const SUPABASE_ANON_KEY = '';
+export const SUPABASE_URL = 'https://kgeoxlkuiarsxeyjswxq.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_UNir-PFZhtRWC8zwXG_Xig_6_PR92eB';
 
 /** Shown in the header and the browser tab. */
 export const BRAND = {

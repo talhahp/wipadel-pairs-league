@@ -17,7 +17,10 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import { buildFixtures, scoreMatch } from './core.js';
 
 const DEMO_KEY = 'wipadel.demo.v1';
-const SUPABASE_ESM = 'https://esm.sh/@supabase/supabase-js@2.45.4';
+// Pinned to the v2 major rather than an exact patch: Supabase's newer
+// "publishable" keys (sb_publishable_...) are only understood by recent 2.x
+// releases, and an exact pin here would reject them.
+const SUPABASE_ESM = 'https://esm.sh/@supabase/supabase-js@2';
 
 export const state = {
   mode: 'demo',          // 'live' | 'demo'
@@ -368,8 +371,6 @@ function demoSettings() {
     season_end: '2026-12-15',
     pace_target_date: '2026-11-15',
     pace_target_matches: 4,
-    promo_code: 'SHERWOOD20',
-    promo_discount: '20%',
     booking_url: 'https://playtomic.io',
     whatsapp_url: '',
     results_locked: false,

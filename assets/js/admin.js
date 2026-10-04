@@ -242,8 +242,6 @@ export const adminView = {
             season_end: d.season_end,
             pace_target_date: d.pace_target_date,
             pace_target_matches: Number(d.pace_target_matches) || 4,
-            promo_code: d.promo_code,
-            promo_discount: d.promo_discount,
             booking_url: d.booking_url,
             whatsapp_url: d.whatsapp_url,
             results_locked: setForm.elements.results_locked.checked,
@@ -557,15 +555,9 @@ function settingsPanel() {
     </div>
 
     <form class="card card--pad stack" id="settings-form">
-      <div class="inline-form">
-        <div class="field">
-          <label for="st-venue">Venue</label>
-          <input id="st-venue" name="venue" value="${s.venue || ''}">
-        </div>
-        <div class="field">
-          <label for="st-promo">Playtomic promo code</label>
-          <input id="st-promo" name="promo_code" value="${s.promo_code || ''}" placeholder="SHERWOOD20">
-        </div>
+      <div class="field">
+        <label for="st-venue">Venue</label>
+        <input id="st-venue" name="venue" value="${s.venue || ''}">
       </div>
 
       <div class="inline-form">
@@ -591,15 +583,9 @@ function settingsPanel() {
         </div>
       </div>
 
-      <div class="inline-form">
-        <div class="field">
-          <label for="st-discount">Discount shown</label>
-          <input id="st-discount" name="promo_discount" value="${s.promo_discount || ''}" placeholder="20%">
-        </div>
-        <div class="field">
-          <label for="st-booking">Booking link</label>
-          <input id="st-booking" name="booking_url" type="url" value="${s.booking_url || ''}">
-        </div>
+      <div class="field">
+        <label for="st-booking">Booking link</label>
+        <input id="st-booking" name="booking_url" type="url" value="${s.booking_url || ''}">
       </div>
 
       <div class="field">

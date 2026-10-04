@@ -65,7 +65,7 @@ function renderChrome() {
   const s = store.state.settings;
   const meta = document.getElementById('masthead-meta');
   const bits = [BRAND.season];
-  if (s?.promo_code) bits.push(`Promo ${s.promo_code}`);
+  if (s?.venue) bits.push(s.venue);
   if (!store.isLive()) bits.push('Demo mode');
   mount(meta, html`${bits.map((b) => html`<span>${b}</span>`)}`);
 

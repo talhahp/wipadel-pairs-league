@@ -58,9 +58,8 @@ function contactRow(label, phone, message) {
 /** The message a player sends to arrange a match. */
 function inviteText(me, opponent, settings) {
   const venue = settings?.venue || 'Wi Padel Sherwood';
-  const promo = settings?.promo_code ? ` (promo code ${settings.promo_code})` : '';
   return `Hi! ${opponent?.name || 'there'} vs ${me?.name || 'us'} in the ${venue} Pairs League. ` +
-         `Which of these suits you for a 90-minute court${promo}? `;
+         `Which of these suits you for a 90-minute court? `;
 }
 
 /**
@@ -842,7 +841,6 @@ export const rulesView = {
 
   render() {
     const s = store.state.settings || {};
-    const promo = s.promo_code;
 
     return html`
       <section class="view prose">
@@ -873,9 +871,8 @@ export const rulesView = {
           <div class="step">
             <div>
               <h4>Book a 90-minute court</h4>
-              <p>Either pair books at ${s.venue || 'Wi Padel Sherwood'}${promo
-                 ? html` on Playtomic using code <strong>${promo}</strong> for the ${s.promo_discount || '20%'} league discount`
-                 : ' on Playtomic'}.</p>
+              <p>Either pair books at ${s.venue || 'Wi Padel Sherwood'} on Playtomic.
+                 The league discount is already on your account - there is no code to enter.</p>
             </div>
           </div>
           <div class="step">
