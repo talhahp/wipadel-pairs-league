@@ -149,6 +149,8 @@ index.html              Shell: header, nav, footer
 assets/css/app.css      All styling, on the Wi Padel logo palette
 assets/img/             Club logo, favicons and the link-preview card,
                         generated from Pictures/logo003.png
+assets/docs/            The two-page player guide PDF, linked from Rules
+tools/make_guide.py     Rebuilds that PDF (needs reportlab + segno)
 assets/js/
   config.js             Supabase URL + anon key          <- edit this
   core.js               Scoring, standings, round robin   (pure, tested)

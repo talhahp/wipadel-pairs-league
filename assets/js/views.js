@@ -853,6 +853,13 @@ export const rulesView = {
           </div>
         </div>
 
+        <div class="btn-row" style="margin-bottom:22px">
+          <a class="btn btn--primary"
+             href="assets/docs/wi-padel-pairs-league-player-guide.pdf"
+             target="_blank" rel="noopener">Download the player guide (PDF)</a>
+          <span class="muted" style="font-size:13px">Two pages - everything below, ready to print or forward.</span>
+        </div>
+
         <h3>Getting a match played</h3>
         <div class="steps">
           <div class="step">
