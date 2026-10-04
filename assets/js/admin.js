@@ -242,6 +242,7 @@ export const adminView = {
             season_end: d.season_end,
             pace_target_date: d.pace_target_date,
             pace_target_matches: Number(d.pace_target_matches) || 4,
+            promo_discount: d.promo_discount,
             booking_url: d.booking_url,
             whatsapp_url: d.whatsapp_url,
             results_locked: setForm.elements.results_locked.checked,
@@ -583,9 +584,16 @@ function settingsPanel() {
         </div>
       </div>
 
-      <div class="field">
-        <label for="st-booking">Booking link</label>
-        <input id="st-booking" name="booking_url" type="url" value="${s.booking_url || ''}">
+      <div class="inline-form">
+        <div class="field">
+          <label for="st-discount">League discount</label>
+          <input id="st-discount" name="promo_discount" value="${s.promo_discount || ''}" placeholder="20%">
+          <span class="field__hint">Applied automatically on Playtomic - no code needed.</span>
+        </div>
+        <div class="field">
+          <label for="st-booking">Booking link</label>
+          <input id="st-booking" name="booking_url" type="url" value="${s.booking_url || ''}">
+        </div>
       </div>
 
       <div class="field">

@@ -107,10 +107,10 @@ create table if not exists public.league_settings (
   season_end         date not null default '2026-12-15',
   pace_target_date   date default '2026-11-15',
   pace_target_matches int default 4,
-  -- Unused: the club's league discount is permanent, so there is no code to
-  -- show. Kept rather than dropped so existing databases need no migration.
+  -- promo_code is unused: the club's discount is permanent and applies with no
+  -- code. Kept rather than dropped so existing databases need no migration.
   promo_code         text,
-  promo_discount     text,
+  promo_discount     text default '20%',
   booking_url        text default 'https://playtomic.io',
   whatsapp_url       text,
   results_locked     boolean not null default false,

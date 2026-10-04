@@ -371,6 +371,7 @@ function demoSettings() {
     season_end: '2026-12-15',
     pace_target_date: '2026-11-15',
     pace_target_matches: 4,
+    promo_discount: '20%',
     booking_url: 'https://playtomic.io',
     whatsapp_url: '',
     results_locked: false,

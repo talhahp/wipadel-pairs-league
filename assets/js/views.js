@@ -872,7 +872,10 @@ export const rulesView = {
             <div>
               <h4>Book a 90-minute court</h4>
               <p>Either pair books at ${s.venue || 'Wi Padel Sherwood'} on Playtomic.
-                 The league discount is already on your account - there is no code to enter.</p>
+                 ${s.promo_discount
+                   ? html`All league bookings are <strong>${s.promo_discount} off</strong> automatically -
+                          there is no code to enter.`
+                   : 'The league discount applies automatically - there is no code to enter.'}</p>
             </div>
           </div>
           <div class="step">

@@ -65,7 +65,7 @@ function renderChrome() {
   const s = store.state.settings;
   const meta = document.getElementById('masthead-meta');
   const bits = [BRAND.season];
-  if (s?.venue) bits.push(s.venue);
+  if (s?.promo_discount) bits.push(`${s.promo_discount} off court bookings`);
   if (!store.isLive()) bits.push('Demo mode');
   mount(meta, html`${bits.map((b) => html`<span>${b}</span>`)}`);
 
