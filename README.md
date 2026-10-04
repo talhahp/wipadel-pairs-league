@@ -5,9 +5,9 @@
 A self-service league site that replaces the Google Sheet. Players find their own
 fixtures, message their opponents, and submit scores; the table updates itself.
 
-Plain static files — no build step, no framework. Hosted free on GitHub Pages.
+Plain static files, no build step and no framework. Hosted free on GitHub Pages.
 
-> **Status:** the site is deployed and running in **demo mode** — it shows a sample
+> **Status:** the site is deployed and running in **demo mode**. It shows a sample
 > league stored in each visitor's own browser. It becomes the real shared league as
 > soon as the Supabase keys are added (step 1–2 below). Don't share the link with
 > players until then.
@@ -21,7 +21,7 @@ Plain static files — no build step, no framework. Hosted free on GitHub Pages.
 | **My team** | The main one. A pair picks themselves once, then sees all 9 fixtures split into *still to play* and *played*, with each opponent's WhatsApp number inline. No fixed order. |
 | **Standings** | Live table with the league's scoring and its full tie-break chain. |
 | **Fixtures** | All 45 matches, searchable, filterable by played / outstanding. |
-| **Grid** | The 10×10 cross grid — who has played whom at a glance. |
+| **Grid** | The 10×10 cross grid, showing who has played whom at a glance. |
 | **Contacts** | The contact directory. |
 | **Enter score** | Validated result submission. One submission per match. |
 | **Rules** | The format, the points, the deadlines. |
@@ -33,7 +33,7 @@ Three points are shared in every match:
 
 * **1 point per full set won**
 * **1 point for winning the match**
-* The 10-point super tie-break is **not** a set — it only decides the match point.
+* The 10-point super tie-break is **not** a set. It only decides the match point.
 
 So a 2–0 win is **3–0**, and a win on the super tie-break is **2–1**.
 
@@ -48,7 +48,7 @@ npm run serve
 ```
 
 Then open <http://localhost:4178>. (A server is only needed because ES modules
-will not load over `file://` — the deployed site is static.)
+will not load over `file://`. The deployed site is static.)
 
 With no Supabase keys configured it runs in **demo mode**: a sample league stored
 in your own browser, so you can click through everything before setting up a
@@ -66,12 +66,12 @@ npm test
 
 ### 1. Create the database (free)
 
-1. Make a project at [supabase.com](https://supabase.com) (free tier is plenty — this
+1. Make a project at [supabase.com](https://supabase.com) (the free tier is plenty for this
    league is a few hundred rows).
 2. Open **SQL Editor** and run `supabase/01_schema.sql`, then `supabase/02_seed.sql`.
    That creates the tables, the security rules, both divisions, the 10 Intermediate
    pairs and their full 45-match round robin.
-3. **Change the admin PIN** — the seed sets it to `padel2026`:
+3. **Change the admin PIN**. The seed sets it to `padel2026`:
 
    ```sql
    select admin_set_pin('padel2026', 'your-new-pin');
@@ -87,11 +87,11 @@ export const SUPABASE_URL = 'https://xxxxxxxx.supabase.co';
 export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';
 ```
 
-Both are public by design — see *Security* below.
+Both are public by design. See *Security* below.
 
 ### 3. Publishing
 
-Already done — this repo is live on GitHub Pages at
+This is already done. The repo is live on GitHub Pages at
 <https://talhahp.github.io/wipadel-pairs-league/>, built from `main` at the repo root.
 
 Every push to `main` redeploys it, usually within a minute:
@@ -113,7 +113,7 @@ If you want to see a change immediately, hard-refresh (Ctrl+Shift+R).
 ### 4. Finish the setup
 
 1. Open the live site, go to **Admin**, unlock with your PIN.
-2. Add each pair's **WhatsApp numbers** — without them players cannot reach each other,
+2. Add each pair's **WhatsApp numbers**. Without them players cannot reach each other,
    which is the one thing the site is for.
 3. Add the **Beginner** pairs, then press **Generate fixtures** for that division.
 4. Put the link in the WhatsApp group description.
@@ -122,7 +122,7 @@ If you want to see a change immediately, hard-refresh (Ctrl+Shift+R).
 
 ## Security
 
-The Supabase anon key ships inside the page — that is normal and expected. The
+The Supabase anon key ships inside the page, which is normal and expected. The
 database is protected by what the key is *allowed to do*, not by hiding it:
 
 * Row level security is on for every table, and the only policies are `SELECT`.
@@ -176,14 +176,14 @@ node supabase/generate-seed.mjs
 ```
 
 This rewrites `02_seed.sql` with a fresh fixture list from the same round-robin code
-the site uses. For a league that is already running, use the Admin screen instead —
+the site uses. For a league that is already running, use the Admin screen instead,
 it will not let you wipe played results by accident.
 
 ---
 
 ## Notes
 
-* The club logo is artwork for light backgrounds — navy figure, navy wordmark — so on
+* The club logo is artwork for light backgrounds, a navy figure and navy wordmark, so on
   this dark page it sits on a light plate rather than being recoloured.
 * Hash routing (`#/standings`) so it works on any static host with no redirect rules.
 * Dark theme only, built around the logo's navy / azure / orange / lime.

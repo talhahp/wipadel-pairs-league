@@ -20,11 +20,13 @@ import segno
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.lib import colors
+from reportlab.lib.utils import ImageReader
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.enums import TA_LEFT
+from reportlab.pdfgen import canvas as pdfcanvas
 from reportlab.platypus import (
     BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, Table, TableStyle,
-    Image, KeepTogether, PageBreak,
+    Image, KeepTogether,
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -51,7 +53,7 @@ MARGIN = 16 * mm
 # ----------------------------------------------------------------- styles
 
 def style(name, **kw):
-    base = dict(name=name, fontName="Helvetica", fontSize=9.6, leading=13.6,
+    base = dict(name=name, fontName="Helvetica", fontSize=9.3, leading=12.8,
                 textColor=INK, alignment=TA_LEFT)
     base.update(kw)
     return ParagraphStyle(**base)
@@ -61,16 +63,16 @@ S = {
                 textColor=NAVY, spaceAfter=1),
     "sub": style("sub", fontSize=10, leading=13, textColor=GREY),
     "h2": style("h2", fontName="Helvetica-Bold", fontSize=11.5, leading=14,
-                textColor=NAVY, spaceBefore=11, spaceAfter=4),
+                textColor=NAVY, spaceBefore=9, spaceAfter=3.5),
     "body": style("body", spaceAfter=4),
-    "bullet": style("bullet", leftIndent=11, bulletIndent=1, spaceAfter=3.2),
+    "bullet": style("bullet", leftIndent=11, bulletIndent=1, spaceAfter=2.4),
     "small": style("small", fontSize=8.4, leading=11.4, textColor=GREY),
     "callout": style("callout", fontSize=10.6, leading=15, textColor=NAVY),
     "stepno": style("stepno", fontName="Helvetica-Bold", fontSize=15,
                     leading=16, textColor=AZURE),
     "steph": style("steph", fontName="Helvetica-Bold", fontSize=10.2,
                    leading=13, textColor=INK),
-    "stepb": style("stepb", fontSize=9.3, leading=12.6, textColor=GREY),
+    "stepb": style("stepb", fontSize=9.1, leading=12.0, textColor=GREY),
     "th": style("th", fontName="Helvetica-Bold", fontSize=8.6, leading=11,
                 textColor=colors.white),
     "td": style("td", fontSize=9.3, leading=12.4),
@@ -84,6 +86,7 @@ def P(text, s="body"):
 
 def bullets(items):
     return [Paragraph(t, S["bullet"], bulletText="•") for t in items]
+
 
 
 def callout(text, tint=PAPER, bar=AZURE):
@@ -108,8 +111,8 @@ def steps(rows):
     t = Table(data, colWidths=[13 * mm, PAGE_W - 2 * MARGIN - 13 * mm])
     t.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 3.5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3.5),
         ("LEFTPADDING", (0, 0), (0, -1), 2),
         ("LINEBELOW", (0, 0), (-1, -2), 0.5, RULE),
     ]))
@@ -124,8 +127,8 @@ def grid(header, rows, widths, highlight_col=None):
     st = [
         ("BACKGROUND", (0, 0), (-1, 0), NAVY),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
         ("LEFTPADDING", (0, 0), (-1, -1), 9),
         ("RIGHTPADDING", (0, 0), (-1, -1), 9),
         ("LINEBELOW", (0, 1), (-1, -2), 0.5, RULE),
@@ -141,55 +144,70 @@ def grid(header, rows, widths, highlight_col=None):
 
 # ------------------------------------------------------------ page frame
 
+class NumberedCanvas(pdfcanvas.Canvas):
+    """Stamps "Page N of M" once M is known, i.e. at save time."""
+
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        self._saved = []
+
+    def showPage(self):
+        self._saved.append(dict(self.__dict__))
+        self._startPage()
+
+    def save(self):
+        total = len(self._saved)
+        for state in self._saved:
+            self.__dict__.update(state)
+            self._footer(total)
+            super().showPage()
+        super().save()
+
+    def _footer(self, total):
+        self.saveState()
+        self.setFont("Helvetica", 7.6)
+        self.setFillColor(GREY)
+        self.drawString(MARGIN, 11 * mm,
+                        "Wi Padel Sherwood Pairs League  ·  15 October – 15 December 2026")
+        self.drawRightString(PAGE_W - MARGIN, 11 * mm, f"Page {self._pageNumber} of {total}")
+        self.setStrokeColor(RULE)
+        self.setLineWidth(0.5)
+        self.line(MARGIN, 14.5 * mm, PAGE_W - MARGIN, 14.5 * mm)
+        self.restoreState()
+
+
+HEADER_H = 30 * mm   # masthead band reserved at the top of every page
+
+
 def decorate(canvas, doc):
+    """Masthead on every page. The footer is drawn by NumberedCanvas."""
     canvas.saveState()
 
-    # Footer
-    canvas.setFont("Helvetica", 7.6)
+    logo_w = 38 * mm
+    logo_h = logo_w * 533 / 900
+    top = PAGE_H - MARGIN
+    canvas.drawImage(ImageReader(LOGO), MARGIN, top - logo_h, width=logo_w,
+                     height=logo_h, mask="auto")
+
+    x = MARGIN + logo_w + 6 * mm
+    canvas.setFillColor(NAVY)
+    canvas.setFont("Helvetica-Bold", 19)
+    canvas.drawString(x, top - 12.5 * mm, "PAIRS LEAGUE")
     canvas.setFillColor(GREY)
-    canvas.drawString(MARGIN, 11 * mm, "Wi Padel Sherwood Pairs League  ·  15 October – 15 December 2026")
-    canvas.drawRightString(PAGE_W - MARGIN, 11 * mm, f"Page {doc.page} of 2")
-    canvas.setStrokeColor(RULE)
-    canvas.setLineWidth(0.5)
-    canvas.line(MARGIN, 14.5 * mm, PAGE_W - MARGIN, 14.5 * mm)
+    canvas.setFont("Helvetica", 9.4)
+    canvas.drawString(x, top - 17.5 * mm,
+                      "Player guide  ·  Wi Padel Sherwood  ·  15 October – 15 December 2026")
+
+    y = top - logo_h - 2 * mm
+    canvas.setStrokeColor(NAVY)
+    canvas.setLineWidth(2.4)
+    canvas.line(MARGIN, y, PAGE_W - MARGIN - 26 * mm, y)
+    canvas.setStrokeColor(LIME)
+    canvas.line(PAGE_W - MARGIN - 24 * mm, y, PAGE_W - MARGIN, y)
 
     canvas.restoreState()
 
 
-def header_flowables():
-    """Logo on the left, title block on the right."""
-    logo = Image(LOGO, width=38 * mm, height=38 * mm * 533 / 900)
-    title = [
-        Paragraph("PAIRS LEAGUE", S["h1"]),
-        Paragraph("Player guide · Wi Padel Sherwood · 15 October – 15 December 2026", S["sub"]),
-    ]
-    t = Table([[logo, title]], colWidths=[42 * mm, PAGE_W - 2 * MARGIN - 42 * mm])
-    t.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (0, 0), "MIDDLE"),
-        ("VALIGN", (1, 0), (1, 0), "MIDDLE"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-    ]))
-    return [t, masthead_rule()]
-
-
-def masthead_rule():
-    """Navy rule with a lime tip, echoing the site header.
-
-    Drawn as a flowable, not on the canvas: the logo sits in the frame and would
-    cross a rule pinned to a fixed y.
-    """
-    w = PAGE_W - 2 * MARGIN
-    r = Table([["", ""]], colWidths=[w - 24 * mm, 24 * mm], rowHeights=[2])
-    r.setStyle(TableStyle([
-        ("LINEBELOW", (0, 0), (0, 0), 2.4, NAVY),
-        ("LINEBELOW", (1, 0), (1, 0), 2.4, LIME),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING", (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-    ]))
-    return r
 
 
 # ----------------------------------------------------------------- build
@@ -210,17 +228,14 @@ def build():
         subject="League format, scoring and rules",
     )
     frame = Frame(MARGIN, 20 * mm, PAGE_W - 2 * MARGIN,
-                  PAGE_H - MARGIN - 20 * mm, id="body",
+                  PAGE_H - MARGIN - HEADER_H - 20 * mm, id="body",
                   leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
     doc.addPageTemplates([PageTemplate(id="page", frames=[frame], onPage=decorate)])
 
     f = []
-    f.extend(header_flowables())
-    f.append(Spacer(1, 7))
-
     f.append(callout(
         "<b>Play when you want, compete when you can.</b> Every pair plays every other pair "
-        "in their division once — nine matches each. There is no set order and no fixed "
+        "in their division once, nine matches each. There is no set order and no fixed "
         "night: you arrange each match directly with your opponents and play it whenever "
         "suits you both, as long as all nine are done by 15 December."))
     f.append(Spacer(1, 4))
@@ -231,20 +246,20 @@ def build():
          "Open the league site, pick your pair once, and you get your own page: all nine "
          "fixtures, split into still-to-play and played, with your opponents' WhatsApp numbers."),
         ("Whoever is marked “messages first” starts the chat",
-         "They suggest two or three date and time options. Either pair may start it — this "
-         "rule only exists so both sides are not sitting waiting for the other."),
+         "They suggest two or three date and time options. Either pair can start it. The rule "
+         "only exists so both sides are not sitting waiting for the other."),
         ("Book a 90-minute court",
          "Either pair books at Wi Padel Sherwood on Playtomic. All league bookings are 20% off "
          "automatically; there is no code to enter."),
-        ("Submit the score straight after",
-         "One player enters it on the site. The table updates immediately, so everyone can see "
-         "where they stand."),
+        ("Submit the score, then post it in the group",
+         "One player enters it on the site, and also posts the score in the WhatsApp group with "
+         "the date and time you played. The table updates the moment it is submitted."),
     ]))
 
     f.append(P("How a match is played", "h2"))
     f.extend(bullets([
         "<b>Two regular sets.</b> A set is won at 6 games with two clear, or 7–5, or 7–6 on a tie-break.",
-        "<b>Golden point at deuce</b> (sudden death) — this keeps matches inside 60–90 minutes so "
+        "<b>Star point at deuce</b> (sudden death). This keeps matches inside 60–90 minutes so "
         "the court is free on time.",
         "<b>If the sets finish 1–1, a 10-point super tie-break decides the match.</b> First to 10, "
         "win by two clear points.",
@@ -264,15 +279,12 @@ def build():
     f.append(Spacer(1, 6))
     f.append(callout(
         "The rule underneath both lines: <b>one point for every full set you win, plus one point "
-        "for winning the match.</b> The super tie-break is <b>not</b> a set — it only decides who "
-        "takes that match point. So you keep a point for a set you won even if you lose the match.",
+        "for winning the match.</b> The super tie-break is <b>not</b> a set. It only decides who "
+        "takes that match point, so you keep a point for a set you won even if you lose the match.",
         tint=colors.HexColor("#F2FBE0"), bar=LIME))
 
-    f.append(PageBreak())
-
-    f.extend(header_flowables())
-    f.append(Spacer(1, 7))
-
+    # Not wrapped in KeepTogether: holding this table whole pushes the guide to
+    # three pages. It splits with its header repeated, which reads fine.
     f.append(P("Three worked examples", "h2"))
     f.append(grid(
         ["SCORE", "RESULT", "POINTS"],
@@ -286,9 +298,9 @@ def build():
     f.append(P(
         "Pairs level on total points are separated in this order:", "body"))
     f.extend(bullets([
-        "<b>1. Head-to-head</b> — the points you took from each other.",
-        "<b>2. Sets won</b> — total full sets across all your matches.",
-        "<b>3. Game difference</b> — games won minus games conceded, counting full sets only.",
+        "<b>1. Head-to-head</b>, the points you took from each other.",
+        "<b>2. Sets won</b>, total full sets across all your matches.",
+        "<b>3. Game difference</b>, games won minus games conceded, counting full sets only.",
     ]))
 
     f.append(P("Deadlines", "h2"))
@@ -301,17 +313,33 @@ def build():
     f.append(P("Substitutes", "h2"))
     f.append(P(
         "If your partner is injured or away, you may use <b>one substitute for that match</b>. "
-        "The substitute's Playtomic rating must be at or below your division cap — "
+        "The substitute's Playtomic rating must be at or below your division cap: "
         "<b>1.5 for Beginner, 3.0 for Intermediate</b>. The result counts normally.", "body"))
+
+    f.append(P("Balls", "h2"))
+    f.append(P(
+        "Balls are split between the two pairs on match day. If you would rather handle it another "
+        "way, that is fine, as long as both pairs agree before you play.", "body"))
 
     f.append(P("Submitting results", "h2"))
     f.extend(bullets([
-        "Either player from the <b>winning pair</b> submits the score.",
-        "A match can only be submitted <b>once</b>, and it cannot be overwritten — check the "
+        "Either player from the <b>winning pair</b> submits the score on the site.",
+        "<b>Post the score in the WhatsApp group as well</b>, with the date and time the match "
+        "was played.",
+        "A match can only be submitted <b>once</b>, and it cannot be overwritten, so check the "
         "score before you send it.",
         "Got it wrong? Message the organiser and it will be corrected.",
         "Only completed, legal scorelines are accepted, so a typo will be refused rather than "
         "quietly saved.",
+    ]))
+
+    f.append(P("A few pointers", "h2"))
+    f.extend(bullets([
+        "Book the court as soon as you agree a time. Slots get scarce towards the end of the season.",
+        "Get there a few minutes early. Your warm up comes out of the 90 minutes.",
+        "If you have to call a match off, tell your opponents as early as you can and offer another time.",
+        "Message the other pair directly instead of asking in the group. Their numbers are on the site.",
+        "Check the grid now and then to see who you still owe a match.",
     ]))
 
     # Closing block: where everything lives, with a QR to the site.
@@ -340,15 +368,14 @@ def build():
     f.append(Spacer(1, 10))
     f.append(KeepTogether(box))
 
-    doc.build(f)
+    doc.build(f, canvasmaker=NumberedCanvas)
     os.remove(qr_png)
 
     from pypdf import PdfReader
     pages = len(PdfReader(OUT).pages)
-    if pages != 2:
-        raise SystemExit(
-            f"Expected a 2-page guide but produced {pages}. The footer prints "
-            f'"Page N of 2", so adjust the content or update decorate().')
+    if pages > 2:
+        print(f"NOTE: {pages} pages. Two fit on one double-sided sheet, which is "
+              f"easier to hand out at the club.")
 
     print(f"Wrote {OUT} ({os.path.getsize(OUT) // 1024} KB, {pages} pages)")
 

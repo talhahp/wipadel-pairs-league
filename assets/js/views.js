@@ -490,7 +490,7 @@ export const gridView = {
     const map = new Map(matches.map((m) => [key(m.home_team, m.away_team), m]));
 
     const cell = (rowTeam, colTeam) => {
-      if (rowTeam.id === colTeam.id) return html`<td><div class="cell cell--self">&mdash;</div></td>`;
+      if (rowTeam.id === colTeam.id) return html`<td><div class="cell cell--self">&middot;</div></td>`;
       const m = map.get(key(rowTeam.id, colTeam.id));
       if (!m) return html`<td><div class="cell cell--todo" title="Not scheduled"></div></td>`;
 
@@ -857,7 +857,7 @@ export const rulesView = {
           <a class="btn btn--primary"
              href="assets/docs/wi-padel-pairs-league-player-guide.pdf"
              target="_blank" rel="noopener">Download the player guide (PDF)</a>
-          <span class="muted" style="font-size:13px">Two pages - everything below, ready to print or forward.</span>
+          <span class="muted" style="font-size:13px">Two pages covering everything below, ready to print or forward.</span>
         </div>
 
         <h3>Getting a match played</h3>
@@ -871,8 +871,8 @@ export const rulesView = {
           <div class="step">
             <div>
               <h4>The pair marked "messages first" reaches out</h4>
-              <p>They propose two or three date and time options. Either pair may start the chat -
-                 this rule just stops both sides waiting for the other.</p>
+              <p>They propose two or three date and time options. Either pair can start the chat.
+                 The rule is only there to stop both sides waiting for the other.</p>
             </div>
           </div>
           <div class="step">
@@ -880,15 +880,17 @@ export const rulesView = {
               <h4>Book a 90-minute court</h4>
               <p>Either pair books at ${s.venue || 'Wi Padel Sherwood'} on Playtomic.
                  ${s.promo_discount
-                   ? html`All league bookings are <strong>${s.promo_discount} off</strong> automatically -
-                          there is no code to enter.`
-                   : 'The league discount applies automatically - there is no code to enter.'}</p>
+                   ? html`All league bookings are <strong>${s.promo_discount} off</strong> automatically.
+                          There is no code to enter.`
+                   : 'The league discount applies automatically. There is no code to enter.'}</p>
             </div>
           </div>
           <div class="step">
             <div>
-              <h4>Submit the score</h4>
-              <p>One player enters it here straight after the match. The table updates immediately.</p>
+              <h4>Submit the score, then post it in the group</h4>
+              <p>One player enters it here straight after the match, and also posts the score in the
+                 WhatsApp group with the date and time you played. The table updates the moment it
+                 is submitted.</p>
             </div>
           </div>
         </div>
@@ -897,13 +899,13 @@ export const rulesView = {
         <ul>
           <li>Two regular sets. If the sets finish <strong>1&ndash;1</strong>, a <strong>10-point super tie-break</strong>
               decides the match (first to 10, win by 2).</li>
-          <li><strong>Golden point</strong> at deuce (sudden death) to keep matches inside 60&ndash;90 minutes.</li>
+          <li><strong>Star point</strong> at deuce (sudden death) to keep matches inside 60&ndash;90 minutes.</li>
           <li>A set is won at 6 games with two clear, or 7&ndash;5, or 7&ndash;6 on a tie-break.</li>
         </ul>
 
         <h3>Points</h3>
         <p>Three points are shared out in every match: one for each full set won, and one more for winning the match.
-           The super tie-break is not a set - it only decides who takes the match point.</p>
+           The super tie-break is not a set. It only decides who takes the match point.</p>
 
         <div class="table-scroll points-table">
           <table>
@@ -941,11 +943,27 @@ export const rulesView = {
            provided the substitute's Playtomic rating is at or below the division cap
            (Beginner 1.5, Intermediate 3.0).</p>
 
+        <h3>Balls</h3>
+        <p>Balls are split between the two pairs on match day. If you would rather handle it another
+           way, that is fine, as long as both pairs agree before you play.</p>
+
         <h3>Scores</h3>
         <ul>
-          <li>Either player from the winning pair submits the result.</li>
+          <li>Either player from the winning pair submits the result here.</li>
+          <li><strong>Post the score in the WhatsApp group as well</strong>, with the date and time
+              the match was played.</li>
           <li>A match can only be submitted once. If something is wrong, ask the organiser to correct it.</li>
-          <li>Drop a photo of the scorecard in the WhatsApp group if you like - the official record is here.</li>
+          <li>A photo of the scorecard in the group is welcome. The record that counts is the one here.</li>
+        </ul>
+
+        <h3>A few pointers</h3>
+        <ul>
+          <li>Book the court as soon as you agree a time. Slots get scarce towards the end of the season.</li>
+          <li>Get there a few minutes early. Your warm up comes out of the 90 minutes.</li>
+          <li>If you have to call a match off, tell your opponents as early as you can and offer another time.</li>
+          <li>Message the other pair directly instead of asking in the group. Their numbers are on the
+              Contacts page.</li>
+          <li>Check the grid now and then to see who you still owe a match.</li>
         </ul>
       </section>`;
   },
