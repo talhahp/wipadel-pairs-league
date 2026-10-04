@@ -1,0 +1,14 @@
+{
+  "name": "wipadel-sherwood-league",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Self-service fixture, results and standings site for the Wi Padel Sherwood Pairs League.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/",
+    "serve": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
