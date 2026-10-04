@@ -1,0 +1,20 @@
+# Git's text heuristic misreads a PDF as text and would apply line-ending
+# conversion on checkout, corrupting it for anyone who clones the repo.
+# Mark every binary explicitly.
+*.pdf  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+
+# Keep the web sources as LF in the repository regardless of platform.
+*.js   text eol=lf
+*.mjs  text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.sql  text eol=lf
+*.md   text eol=lf
+*.py   text eol=lf
