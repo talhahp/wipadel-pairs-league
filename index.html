@@ -53,7 +53,15 @@
 
 </div>
 
-<script type="module" src="assets/js/app.js?v=1"></script>
+<!--
+  No ?v= stamp on the module entry point, deliberately. A query string here only
+  busts app.js; the browser resolves its imports (core.js, views.js, ...) without
+  it, so a stamped entry beside unstamped imports could load new code against old
+  modules. GitHub Pages serves assets with max-age=600, so every file refreshes
+  within ten minutes of a deploy and the set stays consistent. app.css is stamped
+  because it is a single file with no import graph.
+-->
+<script type="module" src="assets/js/app.js"></script>
 
 <noscript>
   <div class="wrap" style="padding:30px 16px">

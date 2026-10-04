@@ -106,6 +106,10 @@ git push
 kept for the alternative of dragging this folder onto
 [app.netlify.com/drop](https://app.netlify.com/drop) if you ever want a nicer domain.)
 
+**Caching:** GitHub Pages serves assets with `max-age=600`, so anyone who already
+has the site open may keep the old version for up to ten minutes after a deploy.
+If you want to see a change immediately, hard-refresh (Ctrl+Shift+R).
+
 ### 4. Finish the setup
 
 1. Open the live site, go to **Admin**, unlock with your PIN.
