@@ -1,9 +1,16 @@
 # Wi Padel Sherwood Pairs League
 
+**Live: <https://talhahp.github.io/wipadel-pairs-league/>**
+
 A self-service league site that replaces the Google Sheet. Players find their own
 fixtures, message their opponents, and submit scores; the table updates itself.
 
-Plain static files — no build step, no framework. Free to host.
+Plain static files — no build step, no framework. Hosted free on GitHub Pages.
+
+> **Status:** the site is deployed and running in **demo mode** — it shows a sample
+> league stored in each visitor's own browser. It becomes the real shared league as
+> soon as the Supabase keys are added (step 1–2 below). Don't share the link with
+> players until then.
 
 ---
 
@@ -82,31 +89,26 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOi...';
 
 Both are public by design — see *Security* below.
 
-### 3. Publish it
+### 3. Publishing
 
-Any static host works. Two free options:
+Already done — this repo is live on GitHub Pages at
+<https://talhahp.github.io/wipadel-pairs-league/>, built from `main` at the repo root.
 
-**GitHub Pages**
+Every push to `main` redeploys it, usually within a minute:
 
 ```bash
-git init
-git add .
-git commit -m "Wi Padel Sherwood league site"
-git branch -M main
-git remote add origin https://github.com/<you>/<repo>.git
-git push -u origin main
+git add -A
+git commit -m "Update the league site"
+git push
 ```
 
-Then **Settings → Pages → Deploy from a branch → `main` / root**. The site lands at
-`https://<you>.github.io/<repo>/`. (`.nojekyll` is already here so the `assets`
-folder is served untouched.)
-
-**Netlify** — drag this folder onto [app.netlify.com/drop](https://app.netlify.com/drop).
-`netlify.toml` is already configured. You get a custom subdomain you can rename.
+(`.nojekyll` is here so the `assets` folder is served untouched. `netlify.toml` is
+kept for the alternative of dragging this folder onto
+[app.netlify.com/drop](https://app.netlify.com/drop) if you ever want a nicer domain.)
 
 ### 4. Finish the setup
 
-1. Open the site, go to **Admin**, unlock with your PIN.
+1. Open the live site, go to **Admin**, unlock with your PIN.
 2. Add each pair's **WhatsApp numbers** — without them players cannot reach each other,
    which is the one thing the site is for.
 3. Add the **Beginner** pairs, then press **Generate fixtures** for that division.
