@@ -944,8 +944,10 @@ export const rulesView = {
            (Beginner 1.5, Intermediate 3.0).</p>
 
         <h3>Balls</h3>
-        <p>Balls are split between the two pairs on match day. If you would rather handle it another
-           way, that is fine, as long as both pairs agree before you play.</p>
+        <p>Balls are <strong>not provided</strong> and are not included in your court booking.
+           If you want a new tin for your match, the pairs buy it themselves. Split the cost
+           between the two pairs, or make your own arrangement, as long as you sort it out
+           before you play.</p>
 
         <h3>Scores</h3>
         <ul>

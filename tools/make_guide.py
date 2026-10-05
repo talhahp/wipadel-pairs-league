@@ -318,8 +318,9 @@ def build():
 
     f.append(P("Balls", "h2"))
     f.append(P(
-        "Balls are split between the two pairs on match day. If you would rather handle it another "
-        "way, that is fine, as long as both pairs agree before you play.", "body"))
+        "Balls are <b>not provided</b> and are not included in your court booking. If you want a "
+        "new tin for your match, the pairs buy it themselves. Split the cost between the two "
+        "pairs, or make your own arrangement, as long as you sort it out before you play.", "body"))
 
     f.append(P("Submitting results", "h2"))
     f.extend(bullets([
