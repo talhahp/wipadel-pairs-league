@@ -97,6 +97,17 @@ async function sel(table, order) {
 
 /** Supabase errors are objects, not Errors - turn them into something throwable. */
 function describe(error, fallback) {
+  // PGRST202 means the database has no function with that signature. In practice
+  // that is a browser running JavaScript from before a migration, since GitHub
+  // Pages serves assets with a ten minute cache. Say so, rather than letting it
+  // surface as "wrong PIN" or "could not save".
+  if (error?.code === 'PGRST202') {
+    const e = new Error(
+      'This page is running an older version of the site. Reload it (Ctrl+Shift+R, ' +
+      'or pull down to refresh on a phone) and try again.');
+    e.cause = error;
+    return e;
+  }
   const msg = error?.message || error?.hint || fallback;
   const e = new Error(msg);
   e.cause = error;
