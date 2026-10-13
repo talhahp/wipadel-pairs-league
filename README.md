@@ -142,6 +142,45 @@ limiting on guessing it. Use something long, and don't reuse a password.
 
 ---
 
+## Running more than one league
+
+The database holds a league per venue. Sherwood is one; Scottburgh is another.
+Each has its own divisions, pairs, fixtures, rules, settings and admin PIN, and
+they share nothing. Each club gets its own link for its own WhatsApp group:
+
+```
+https://talhahp.github.io/wipadel-pairs-league/#/sherwood/standings
+https://talhahp.github.io/wipadel-pairs-league/#/scottburgh/standings
+```
+
+A link with no league, like `#/standings`, falls back to the first league, so
+older links keep working.
+
+To add a venue: unlock Admin on the owner league, open **Settings**, and fill in
+**Another venue**. It copies the current rules across as a starting point and
+takes its own PIN. Only the owner league's organiser sees that form.
+
+### Division format
+
+Each division sets how often pairs meet, so they do not all have to match. Ten
+pairs meeting once is 45 matches, nine each. Five pairs meeting twice is 20
+matches, eight each, which is a better season for a small division than four
+games. Change it under **Admin to Divisions**, then rebuild that division's
+fixtures. Rebuilding one division never touches another.
+
+### Editing the rules
+
+**Admin to Rules** edits what players read. Sections can be added, reordered,
+hidden or deleted, and come in three types:
+
+* **Text and bullets** - a paragraph per line; a line starting with `- ` is a bullet.
+* **Numbered steps** - one step per line, written as `Title :: explanation`.
+* **Points table** - generated from the scoring engine in `core.js`, not typed.
+
+That last one is deliberate. If the points table were free text, someone could
+publish rules that disagree with how the standings are actually calculated. The
+wording around it is yours; the numbers come from the code that computes them.
+
 ## Project layout
 
 ```
@@ -162,6 +201,8 @@ assets/js/
 supabase/
   01_schema.sql         Tables, RLS, functions            <- run first
   02_seed.sql           Divisions, pairs, 45 fixtures     <- run second
+  03_multi_league.sql   Leagues, division format, rules   <- run third
+  04_functions.sql      League-aware write functions      <- run fourth
   generate-seed.mjs     Regenerates 02_seed.sql
 tests/core.test.mjs     29 tests over the league logic
 server.mjs              Local preview server only

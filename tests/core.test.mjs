@@ -9,6 +9,8 @@ import {
   roundRobin,
   buildFixtures,
   divisionProgress,
+  fixtureCount,
+  matchesPerTeam,
   daysUntil,
   teamSchedule,
   SCORING,
@@ -374,4 +376,97 @@ test('teamSchedule survives an opponent that no longer exists', () => {
   const mine = teamSchedule('a', [{ match_no: 1, home_team: 'a', away_team: 'gone', status: 'pending' }], teamsById);
   assert.equal(mine.length, 1);
   assert.equal(mine[0].opponent, null);
+});
+
+test('a double round robin plays every pair twice with hosting reversed', () => {
+  // Five pairs meeting once is only four matches each, so a small division
+  // doubles up. This is the Beginner case.
+  const ids = ['a', 'b', 'c', 'd', 'e'];
+  const rows = buildFixtures('beginner', ids, 2);
+
+  assert.equal(rows.length, 20, '5 pairs twice = 20 matches');
+  assert.deepEqual(rows.map((r) => r.match_no), Array.from({ length: 20 }, (_, i) => i + 1));
+  assert.equal(rows.filter((r) => r.meeting === 1).length, 10);
+  assert.equal(rows.filter((r) => r.meeting === 2).length, 10);
+
+  const meetings = new Map();
+  const played = new Map(ids.map((id) => [id, 0]));
+  const hosted = new Map(ids.map((id) => [id, 0]));
+  for (const r of rows) {
+    const key = [r.home_team, r.away_team].sort().join('|');
+    meetings.set(key, (meetings.get(key) || 0) + 1);
+    played.set(r.home_team, played.get(r.home_team) + 1);
+    played.set(r.away_team, played.get(r.away_team) + 1);
+    hosted.set(r.home_team, hosted.get(r.home_team) + 1);
+  }
+
+  assert.equal(meetings.size, 10, 'every one of the 10 pairings appears');
+  assert.ok([...meetings.values()].every((n) => n === 2), 'each pairing exactly twice');
+  assert.ok([...played.values()].every((n) => n === 8), 'each pair plays 8');
+  assert.ok([...hosted.values()].every((n) => n === 4), 'hosting splits evenly: ' + [...hosted.values()]);
+});
+
+test('the second meeting swaps who makes first contact', () => {
+  const ids = ['a', 'b', 'c', 'd'];
+  const rows = buildFixtures('beginner', ids, 2);
+  const first = new Map();
+  for (const r of rows.filter((x) => x.meeting === 1)) {
+    first.set([r.home_team, r.away_team].sort().join('|'), r.home_team);
+  }
+  for (const r of rows.filter((x) => x.meeting === 2)) {
+    const key = [r.home_team, r.away_team].sort().join('|');
+    assert.notEqual(r.home_team, first.get(key),
+      'the same pair hosted both meetings of ' + key);
+  }
+});
+
+test('rounds keep climbing across meetings rather than restarting', () => {
+  const rows = buildFixtures('beginner', ['a', 'b', 'c', 'd'], 2);
+  const r1 = rows.filter((r) => r.meeting === 1).map((r) => r.round);
+  const r2 = rows.filter((r) => r.meeting === 2).map((r) => r.round);
+  assert.equal(Math.min(...r1), 1);
+  assert.ok(Math.min(...r2) > Math.max(...r1), 'meeting 2 rounds follow meeting 1');
+});
+
+test('a single meeting is still the default and unchanged', () => {
+  const ids = Array.from({ length: 10 }, (_, i) => 't' + i);
+  const once = buildFixtures('intermediate', ids);
+  assert.equal(once.length, 45);
+  assert.ok(once.every((r) => r.meeting === 1));
+  assert.deepEqual(once.map((r) => r.match_no),
+                   buildFixtures('intermediate', ids, 1).map((r) => r.match_no));
+});
+
+test('ten pairs twice is a 90-match season with balanced hosting', () => {
+  const ids = Array.from({ length: 10 }, (_, i) => 't' + i);
+  const rows = buildFixtures('intermediate', ids, 2);
+  assert.equal(rows.length, 90);
+  const hosted = new Map(ids.map((id) => [id, 0]));
+  for (const r of rows) hosted.set(r.home_team, hosted.get(r.home_team) + 1);
+  assert.ok([...hosted.values()].every((n) => n === 9), 'each hosts 9 of its 18');
+});
+
+test('a bad meetings value falls back to one meeting', () => {
+  const ids = ['a', 'b', 'c'];
+  for (const bad of [0, -3, undefined, null, NaN, 'x']) {
+    assert.equal(buildFixtures('d', ids, bad).length, 3, 'meetings=' + String(bad));
+  }
+  assert.equal(buildFixtures('d', ids, 2.9).length, 6, 'fractional rounds down');
+});
+
+test('fixtureCount and matchesPerTeam agree with the generated list', () => {
+  for (const [n, m] of [[10, 1], [5, 2], [4, 2], [10, 2], [7, 3]]) {
+    const ids = Array.from({ length: n }, (_, i) => 'x' + i);
+    const rows = buildFixtures('d', ids, m);
+    assert.equal(fixtureCount(n, m), rows.length, `${n} teams x${m}`);
+    const played = new Map(ids.map((id) => [id, 0]));
+    for (const r of rows) {
+      played.set(r.home_team, played.get(r.home_team) + 1);
+      played.set(r.away_team, played.get(r.away_team) + 1);
+    }
+    assert.ok([...played.values()].every((v) => v === matchesPerTeam(n, m)),
+      `matchesPerTeam wrong for ${n} teams x${m}`);
+  }
+  assert.equal(fixtureCount(1, 2), 0);
+  assert.equal(matchesPerTeam(1, 2), 0);
 });

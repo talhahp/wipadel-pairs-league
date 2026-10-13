@@ -7,9 +7,17 @@ import { html, raw, mount, stat, empty, notice, flash, errorText,
          shortDate, longDate, signed, plural, waLink, dialable, formData } from './ui.js';
 import * as store from './store.js';
 import { buildStandings, teamSchedule, divisionProgress, daysUntil,
-         scoreMatch, formatScoreline, TIEBREAKERS } from './core.js';
+         scoreMatch, formatScoreline, fixtureCount, matchesPerTeam,
+         SCORING, TIEBREAKERS } from './core.js';
 
 /* ------------------------------------------------------------ shared pieces */
+
+/** An in-site link that stays inside the league being viewed. */
+function link(view, query) {
+  const league = store.state.leagueId;
+  const qs = query ? `?${query}` : '';
+  return league ? `#/${league}/${view}${qs}` : `#/${view}${qs}`;
+}
 
 function divisionSwitch(ctx) {
   const divs = store.state.divisions;
@@ -118,7 +126,7 @@ function fixtureCard(match, teamsById, perspective, opts = {}) {
   const right = done
     ? html`<span class="fx__score mono">${formatScoreline(match)}</span>${badge}`
     : (opts.actions === false ? '' : html`
-        <a class="btn btn--sm btn--primary" href="#/submit?m=${match.id}">Enter score</a>`);
+        <a class="btn btn--sm btn--primary" href="${link('submit', `m=${match.id}`)}">Enter score</a>`);
 
   return html`
     <article class="fx fx--${tone} ${done ? 'fx--done' : ''}">
@@ -181,14 +189,14 @@ export const myTeamView = {
         </div>
 
         <div class="btn-row" style="margin-bottom:22px">
-          <a class="btn btn--primary" href="#/submit">Enter a score</a>
+          <a class="btn btn--primary" href="${link('submit')}">Enter a score</a>
           <button class="btn btn--ghost" type="button" data-act="change">Not your team?</button>
         </div>
 
         <div class="split-head"><h3>Still to play (${todo.length})</h3></div>
         ${todo.length
           ? html`<div class="fixtures">${todo.map((s) => matchWithContacts(s, me, settings))}</div>`
-          : empty('All nine done', 'Every fixture is in. Check the standings to see where you finished.')}
+          : empty('All done', 'Every fixture is in. Check the standings to see where you finished.')}
 
         <div class="split-head"><h3>Played (${played.length})</h3></div>
         ${played.length
@@ -202,7 +210,7 @@ export const myTeamView = {
     if (change) {
       change.addEventListener('click', () => {
         store.setMyTeamId(null);
-        ctx.go('#/my');
+        ctx.go(link('my'));
       });
     }
 
@@ -225,7 +233,7 @@ export const myTeamView = {
         e.preventDefault();
         if (!teamSel.value) return;
         store.setMyTeamId(teamSel.value);
-        ctx.go('#/my');
+        ctx.go(link('my'));
       });
     }
   },
@@ -240,7 +248,7 @@ function pickTeam(ctx) {
           <p class="eyebrow">Start here</p>
           <h2>Which pair are you?</h2>
           <p>Pick your team once and this device remembers it. You then get your own
-             page with all nine fixtures, who you still have to play, and their numbers.</p>
+             page with every fixture, who you still have to play, and their numbers.</p>
         </div>
       </div>
 
@@ -286,7 +294,7 @@ function matchWithContacts(entry, me, settings) {
           </div>` : ''}
       </div>
       <div class="fx__right">
-        <a class="btn btn--sm btn--primary" href="#/submit?m=${entry.match.id}">Enter score</a>
+        <a class="btn btn--sm btn--primary" href="${link('submit', `m=${entry.match.id}`)}">Enter score</a>
       </div>
     </article>`;
 }
@@ -400,8 +408,8 @@ export const fixturesView = {
         <div class="section-head">
           <div>
             <h2>All fixtures</h2>
-            <p>Every pair plays every other pair once. Play them in whatever order suits you -
-               the round number is only there to keep the list tidy.</p>
+            <p>Play them in whatever order suits you. The round number is only there to
+               keep the list tidy.</p>
           </div>
         </div>
 
@@ -720,7 +728,7 @@ export const submitView = {
 
           <div class="btn-row">
             <button class="btn btn--primary" type="submit">Submit result</button>
-            <a class="btn btn--ghost" href="#/my">Cancel</a>
+            <a class="btn btn--ghost" href="${link('my')}">Cancel</a>
           </div>
         </form>
       </section>`;
@@ -823,7 +831,7 @@ export const submitView = {
         const a = byId.get(m.away_team);
         flash(msg, 'ok', `Match ${m.match_no} recorded.`,
           `${h ? h.name : '?'} v ${a ? a.name : '?'} - ${formatScoreline(readRow())}. The standings are updated.`);
-        ctx.go('#/standings');
+        ctx.go(link('standings'));
       } catch (err) {
         flash(msg, 'err', 'That result was not saved.', errorText(err));
         btn.disabled = false;
@@ -839,17 +847,20 @@ export const rulesView = {
   id: 'rules',
   label: 'Rules',
 
-  render() {
-    const s = store.state.settings || {};
+  render(ctx) {
+    const league = store.state.league || {};
+    const sections = [...store.state.rules]
+      .filter((r) => r.visible !== false)
+      .sort((a, b) => a.sort_order - b.sort_order);
 
     return html`
       <section class="view prose">
         <div class="section-head">
           <div>
-            <p class="eyebrow">${longDate(s.season_start)} &ndash; ${longDate(s.season_end)}</p>
+            <p class="eyebrow">${longDate(league.season_start)} to ${longDate(league.season_end)}</p>
             <h2>How the league works</h2>
-            <p>Play when you want, compete when you can. Every pair plays every other pair
-               once, in whatever order the two of you agree on.</p>
+            <p>Play when you want, compete when you can. Every pair plays every other pair in
+               their division, in whatever order the two of you agree on.</p>
           </div>
         </div>
 
@@ -857,116 +868,130 @@ export const rulesView = {
           <a class="btn btn--primary"
              href="assets/docs/wi-padel-pairs-league-player-guide.pdf"
              target="_blank" rel="noopener">Download the player guide (PDF)</a>
-          <span class="muted" style="font-size:13px">Two pages covering everything below, ready to print or forward.</span>
+          <span class="muted" style="font-size:13px">Everything below, ready to print or forward.</span>
         </div>
 
-        <h3>Getting a match played</h3>
-        <div class="steps">
-          <div class="step">
-            <div>
-              <h4>Find your next opponent</h4>
-              <p>Your own page lists all nine fixtures and who is still outstanding, with numbers.</p>
-            </div>
-          </div>
-          <div class="step">
-            <div>
-              <h4>The pair marked "messages first" reaches out</h4>
-              <p>They propose two or three date and time options. Either pair can start the chat.
-                 The rule is only there to stop both sides waiting for the other.</p>
-            </div>
-          </div>
-          <div class="step">
-            <div>
-              <h4>Book a 90-minute court</h4>
-              <p>Either pair books at ${s.venue || 'Wi Padel Sherwood'} on Playtomic.
-                 ${s.promo_discount
-                   ? html`All league bookings are <strong>${s.promo_discount} off</strong> automatically.
-                          There is no code to enter.`
-                   : 'The league discount applies automatically. There is no code to enter.'}</p>
-            </div>
-          </div>
-          <div class="step">
-            <div>
-              <h4>Submit the score, then post it in the group</h4>
-              <p>One player enters it here straight after the match, and also posts the score in the
-                 WhatsApp group with the date and time you played. The table updates the moment it
-                 is submitted.</p>
-            </div>
-          </div>
-        </div>
+        ${divisionFormats()}
 
-        <h3>Match format</h3>
-        <ul>
-          <li>Two regular sets. If the sets finish <strong>1&ndash;1</strong>, a <strong>10-point super tie-break</strong>
-              decides the match (first to 10, win by 2).</li>
-          <li><strong>Star point</strong> at deuce (sudden death) to keep matches inside 60&ndash;90 minutes.</li>
-          <li>A set is won at 6 games with two clear, or 7&ndash;5, or 7&ndash;6 on a tie-break.</li>
-        </ul>
-
-        <h3>Points</h3>
-        <p>Three points are shared out in every match: one for each full set won, and one more for winning the match.
-           The super tie-break is not a set. It only decides who takes the match point.</p>
-
-        <div class="table-scroll points-table">
-          <table>
-            <thead>
-              <tr><th class="l">Result</th><th>Winner</th><th>Loser</th><th class="l hide-sm">Why</th></tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="l"><b>Won 2&ndash;0</b></td>
-                <td class="pts">3</td><td>0</td>
-                <td class="l hide-sm muted">2 sets + the match</td>
-              </tr>
-              <tr>
-                <td class="l"><b>Won on the super tie-break</b></td>
-                <td class="pts">2</td><td>1</td>
-                <td class="l hide-sm muted">1 set each; the winner adds the match point</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <h3>Ties in the table</h3>
-        <p>Pairs level on points are separated by, in order:
-           ${TIEBREAKERS.slice(1).map((t, i, arr) =>
-             html`<strong>${t.toLowerCase()}</strong>${i < arr.length - 1 ? ', then ' : '.'}`)}</p>
-
-        <h3>Pace</h3>
-        <p>All nine matches must be finished by <strong>${longDate(s.season_end)}</strong>.
-           ${s.pace_target_date ? html`We recommend completing at least
-           ${plural(s.pace_target_matches || 4, 'match', 'matches')} by
-           <strong>${longDate(s.pace_target_date)}</strong> so courts are not scarce at the end.` : ''}</p>
-
-        <h3>Substitutes</h3>
-        <p>A pair may use <strong>one substitute per match</strong> if a partner is injured or away,
-           provided the substitute's Playtomic rating is at or below the division cap
-           (Beginner 1.5, Intermediate 3.0).</p>
-
-        <h3>Balls</h3>
-        <p>Balls are <strong>not provided</strong> and are not included in your court booking.
-           If you want a new tin for your match, the pairs buy it themselves. Split the cost
-           between the two pairs, or make your own arrangement, as long as you sort it out
-           before you play.</p>
-
-        <h3>Scores</h3>
-        <ul>
-          <li>Either player from the winning pair submits the result here.</li>
-          <li><strong>Post the score in the WhatsApp group as well</strong>, with the date and time
-              the match was played.</li>
-          <li>A match can only be submitted once. If something is wrong, ask the organiser to correct it.</li>
-          <li>A photo of the scorecard in the group is welcome. The record that counts is the one here.</li>
-        </ul>
-
-        <h3>A few pointers</h3>
-        <ul>
-          <li>Book the court as soon as you agree a time. Slots get scarce towards the end of the season.</li>
-          <li>Get there a few minutes early. Your warm up comes out of the 90 minutes.</li>
-          <li>If you have to call a match off, tell your opponents as early as you can and offer another time.</li>
-          <li>Message the other pair directly instead of asking in the group. Their numbers are on the
-              Contacts page.</li>
-          <li>Check the grid now and then to see who you still owe a match.</li>
-        </ul>
+        ${sections.length
+          ? sections.map((r) => ruleSection(r))
+          : empty('No rules written yet', 'The organiser can add them from the Admin tab.')}
       </section>`;
   },
 };
+
+/** What each division actually plays, taken from its own settings. */
+function divisionFormats() {
+  const divisions = store.state.divisions;
+  if (!divisions.length) return '';
+
+  return html`
+    <h3>Your season</h3>
+    <ul>
+      ${divisions.map((d) => {
+        const teams = store.divisionTeams(d.id).length;
+        const meetings = d.meetings || 1;
+        if (teams < 2) {
+          return html`<li><strong>${d.name}</strong>: pairs are still being added.</li>`;
+        }
+        return html`<li><strong>${d.name}</strong>${d.rating_label ? ` (${d.rating_label})` : ''}:
+          ${teams} pairs, each playing the others
+          ${meetings === 1 ? 'once' : meetings === 2 ? 'twice' : `${meetings} times`}.
+          That is <strong>${matchesPerTeam(teams, meetings)} matches</strong> each,
+          ${fixtureCount(teams, meetings)} in the division.</li>`;
+      })}
+    </ul>`;
+}
+
+/**
+ * Render one editable rule section.
+ *
+ * prose   paragraphs, with lines starting "- " becoming bullets
+ * steps   numbered cards from "Title :: body" lines
+ * scoring the points table, generated from the scoring engine rather than
+ *         typed, so the published rules cannot contradict the real table
+ */
+/** Split an editable body into lines, tolerating Windows line endings. */
+function bodyLines(text) {
+  return String(text || '').split(/\r?\n/);
+}
+
+function ruleSection(rule) {
+  if (rule.kind === 'scoring') return scoringBlock(rule.heading);
+
+  if (rule.kind === 'steps') {
+    const steps = bodyLines(rule.body)
+      .map((line) => line.trim()).filter(Boolean)
+      .map((line) => {
+        const i = line.indexOf('::');
+        return i === -1
+          ? { title: line, body: '' }
+          : { title: line.slice(0, i).trim(), body: line.slice(i + 2).trim() };
+      });
+    return html`
+      <h3>${rule.heading}</h3>
+      <div class="steps">
+        ${steps.map((st) => html`
+          <div class="step">
+            <div>
+              <h4>${st.title}</h4>
+              ${st.body ? html`<p>${st.body}</p>` : ''}
+            </div>
+          </div>`)}
+      </div>`;
+  }
+
+  // prose: group consecutive "- " lines into one list
+  const blocks = [];
+  for (const line of bodyLines(rule.body).map((l) => l.trimEnd())) {
+    const text = line.trim();
+    if (!text) continue;
+    if (text.startsWith('- ')) {
+      const item = text.slice(2).trim();
+      if (blocks.length && blocks[blocks.length - 1].list) blocks[blocks.length - 1].items.push(item);
+      else blocks.push({ list: true, items: [item] });
+    } else {
+      blocks.push({ list: false, text });
+    }
+  }
+
+  return html`
+    <h3>${rule.heading}</h3>
+    ${blocks.map((b) => b.list
+      ? html`<ul>${b.items.map((i) => html`<li>${i}</li>`)}</ul>`
+      : html`<p>${b.text}</p>`)}`;
+}
+
+/** Generated from core.js, so it always matches how the table is worked out. */
+function scoringBlock(heading) {
+  return html`
+    <h3>${heading || 'Points'}</h3>
+    <p>Three points are shared out in every match: one for each full set won, and one more for
+       winning the match. The super tie-break is not a set. It only decides who takes the match point.</p>
+
+    <div class="table-scroll points-table">
+      <table>
+        <thead>
+          <tr><th class="l">Result</th><th>Winner</th><th>Loser</th><th class="l hide-sm">Why</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="l"><b>Won 2&ndash;0</b></td>
+            <td class="pts">${2 * SCORING.pointPerSet + SCORING.pointForMatchWin}</td>
+            <td>0</td>
+            <td class="l hide-sm muted">2 sets + the match</td>
+          </tr>
+          <tr>
+            <td class="l"><b>Won on the super tie-break</b></td>
+            <td class="pts">${SCORING.pointPerSet + SCORING.pointForMatchWin}</td>
+            <td>${SCORING.pointPerSet}</td>
+            <td class="l hide-sm muted">1 set each; the winner adds the match point</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top:12px">Pairs level on points are separated by, in order:
+       ${TIEBREAKERS.slice(1).map((t, i, arr) =>
+         html`<strong>${t.toLowerCase()}</strong>${i < arr.length - 1 ? ', then ' : '.'}`)}</p>`;
+}

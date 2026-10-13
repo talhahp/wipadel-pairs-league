@@ -290,24 +290,52 @@ function hostsFirst(a, b, seat, n) {
 /**
  * Flatten a round-robin into numbered fixture rows ready for the database.
  * The designated home team is the one responsible for reaching out first.
+ *
+ * `meetings` is how many times each pair plays each other. A small division
+ * often wants two: five pairs meeting once is only four matches each, which is
+ * a thin season. The second meeting reverses home and away, so over two
+ * meetings every pair makes first contact exactly once against each opponent.
+ *
+ * @param {string} divisionId
+ * @param {Array<string>} teamIds
+ * @param {number} meetings - 1 for a single round robin, 2 for a double, etc.
  */
-export function buildFixtures(divisionId, teamIds) {
+export function buildFixtures(divisionId, teamIds, meetings = 1) {
+  const times = Math.max(1, Math.floor(meetings) || 1);
   const rounds = roundRobin(teamIds);
+  if (!rounds.length) return [];
+
   const out = [];
   let no = 1;
-  rounds.forEach((pairs, idx) => {
-    for (const pair of pairs) {
-      out.push({
-        division_id: divisionId,
-        round: idx + 1,
-        match_no: no++,
-        home_team: pair[0],
-        away_team: pair[1],
-        status: 'pending',
-      });
-    }
-  });
+  for (let meeting = 0; meeting < times; meeting++) {
+    const reverse = meeting % 2 === 1;
+    rounds.forEach((pairs, idx) => {
+      for (const pair of pairs) {
+        out.push({
+          division_id: divisionId,
+          round: meeting * rounds.length + idx + 1,
+          match_no: no++,
+          meeting: meeting + 1,
+          home_team: reverse ? pair[1] : pair[0],
+          away_team: reverse ? pair[0] : pair[1],
+          status: 'pending',
+        });
+      }
+    });
+  }
   return out;
+}
+
+/** How many matches a division will have, without building the list. */
+export function fixtureCount(teamCount, meetings = 1) {
+  if (teamCount < 2) return 0;
+  return (teamCount * (teamCount - 1) / 2) * Math.max(1, Math.floor(meetings) || 1);
+}
+
+/** How many matches each pair plays. */
+export function matchesPerTeam(teamCount, meetings = 1) {
+  if (teamCount < 2) return 0;
+  return (teamCount - 1) * Math.max(1, Math.floor(meetings) || 1);
 }
 
 /* -------------------------------------------------------------------- extras */

@@ -205,6 +205,21 @@ h1, h2, h3, h4 {
   margin-top: 3px;
 }
 
+/* League picker. Inputs are full width by default, which is wrong for a
+   control sitting inline in the masthead. */
+#league-switch {
+  width: auto;
+  min-width: 170px;
+  max-width: 260px;
+  padding: 7px 32px 7px 11px;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background-color: var(--card);
+  border-color: var(--line);
+}
+
 .masthead__meta {
   display: flex;
   align-items: center;
