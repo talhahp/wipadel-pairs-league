@@ -8,7 +8,7 @@
  * localStorage, and is sent with each call.
  */
 
-import { html, raw, empty, notice, flash, errorText,
+import { html, raw, empty, notice, flash, errorText, isStale, mount,
          formData, shortDate, longDate } from './ui.js';
 import * as store from './store.js';
 import { scoreMatch, formatScoreline, divisionProgress,
@@ -93,7 +93,22 @@ export const adminView = {
           pinLeague = store.state.leagueId;
           ctx.rerender();
         } catch (err) {
-          flash(root.querySelector('#unlock-msg'), 'err', 'Not unlocked.', errorText(err));
+          const box = root.querySelector('#unlock-msg');
+          if (isStale(err)) {
+            // Nothing is wrong with the PIN: this tab is just out of date.
+            mount(box, html`
+              <div class="notice notice--warn">
+                <strong>This page is out of date.</strong>
+                <p>${errorText(err)}</p>
+                <div class="btn-row" style="margin-top:10px">
+                  <button class="btn btn--sm btn--primary" type="button" data-act="reload">Reload now</button>
+                </div>
+              </div>`);
+            box.querySelector('[data-act="reload"]')
+               ?.addEventListener('click', () => location.reload());
+          } else {
+            flash(box, 'err', 'Not unlocked.', errorText(err));
+          }
           btn.disabled = false;
         }
       });

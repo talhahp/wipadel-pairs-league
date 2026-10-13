@@ -134,6 +134,14 @@ export function formData(form) {
   return out;
 }
 
+/**
+ * True when the failure is this page running code from before a deploy.
+ * The caller offers a reload rather than leaving someone to guess.
+ */
+export function isStale(err) {
+  return Boolean(err && err.stale);
+}
+
 /** Turn an unexpected failure into something a player can actually read. */
 export function errorText(err) {
   const msg = err && err.message ? err.message : String(err);

@@ -103,9 +103,10 @@ function describe(error, fallback) {
   // surface as "wrong PIN" or "could not save".
   if (error?.code === 'PGRST202') {
     const e = new Error(
-      'This page is running an older version of the site. Reload it (Ctrl+Shift+R, ' +
-      'or pull down to refresh on a phone) and try again.');
+      'This page is running an older version of the site, from before the last update. ' +
+      'Reload it and try again.');
     e.cause = error;
+    e.stale = true;        // the screen offers a reload button for these
     return e;
   }
   const msg = error?.message || error?.hint || fallback;
