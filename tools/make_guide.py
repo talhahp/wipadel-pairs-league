@@ -53,7 +53,7 @@ MARGIN = 16 * mm
 # ----------------------------------------------------------------- styles
 
 def style(name, **kw):
-    base = dict(name=name, fontName="Helvetica", fontSize=9.3, leading=12.8,
+    base = dict(name=name, fontName="Helvetica", fontSize=9.1, leading=12.2,
                 textColor=INK, alignment=TA_LEFT)
     base.update(kw)
     return ParagraphStyle(**base)
@@ -62,17 +62,17 @@ S = {
     "h1": style("h1", fontName="Helvetica-Bold", fontSize=19, leading=21,
                 textColor=NAVY, spaceAfter=1),
     "sub": style("sub", fontSize=10, leading=13, textColor=GREY),
-    "h2": style("h2", fontName="Helvetica-Bold", fontSize=11.5, leading=14,
-                textColor=NAVY, spaceBefore=9, spaceAfter=3.5),
+    "h2": style("h2", fontName="Helvetica-Bold", fontSize=11, leading=13,
+                textColor=NAVY, spaceBefore=7.5, spaceAfter=3),
     "body": style("body", spaceAfter=4),
-    "bullet": style("bullet", leftIndent=11, bulletIndent=1, spaceAfter=2.4),
+    "bullet": style("bullet", leftIndent=11, bulletIndent=1, spaceAfter=1.9),
     "small": style("small", fontSize=8.4, leading=11.4, textColor=GREY),
     "callout": style("callout", fontSize=10.6, leading=15, textColor=NAVY),
     "stepno": style("stepno", fontName="Helvetica-Bold", fontSize=15,
                     leading=16, textColor=AZURE),
     "steph": style("steph", fontName="Helvetica-Bold", fontSize=10.2,
                    leading=13, textColor=INK),
-    "stepb": style("stepb", fontSize=9.1, leading=12.0, textColor=GREY),
+    "stepb": style("stepb", fontSize=8.9, leading=11.5, textColor=GREY),
     "th": style("th", fontName="Helvetica-Bold", fontSize=8.6, leading=11,
                 textColor=colors.white),
     "td": style("td", fontSize=9.3, leading=12.4),
@@ -176,26 +176,26 @@ class NumberedCanvas(pdfcanvas.Canvas):
         self.restoreState()
 
 
-HEADER_H = 30 * mm   # masthead band reserved at the top of every page
+HEADER_H = 25 * mm   # masthead band reserved at the top of every page
 
 
 def decorate(canvas, doc):
     """Masthead on every page. The footer is drawn by NumberedCanvas."""
     canvas.saveState()
 
-    logo_w = 38 * mm
+    logo_w = 32 * mm
     logo_h = logo_w * 533 / 900
     top = PAGE_H - MARGIN
     canvas.drawImage(ImageReader(LOGO), MARGIN, top - logo_h, width=logo_w,
                      height=logo_h, mask="auto")
 
-    x = MARGIN + logo_w + 6 * mm
+    x = MARGIN + logo_w + 5 * mm
     canvas.setFillColor(NAVY)
-    canvas.setFont("Helvetica-Bold", 19)
-    canvas.drawString(x, top - 12.5 * mm, "PAIRS LEAGUE")
+    canvas.setFont("Helvetica-Bold", 17)
+    canvas.drawString(x, top - 11 * mm, "PAIRS LEAGUE")
     canvas.setFillColor(GREY)
     canvas.setFont("Helvetica", 9.4)
-    canvas.drawString(x, top - 17.5 * mm,
+    canvas.drawString(x, top - 15.5 * mm,
                       "Player guide  ·  Wi Padel Sherwood  ·  15 October – 15 December 2026")
 
     y = top - logo_h - 2 * mm
@@ -235,16 +235,16 @@ def build():
     f = []
     f.append(callout(
         "<b>Play when you want, compete when you can.</b> Every pair plays every other pair "
-        "in their division once, nine matches each. There is no set order and no fixed "
-        "night: you arrange each match directly with your opponents and play it whenever "
-        "suits you both, as long as all nine are done by 15 December."))
+        "in their division. There is no set order and no fixed night: you arrange each match "
+        "directly with your opponents and play it whenever suits you both, as long as they "
+        "are all done by 15 December."))
     f.append(Spacer(1, 4))
 
     f.append(P("Getting a match played", "h2"))
     f.append(steps([
         ("Find who you still have to play",
-         "Open the league site, pick your pair once, and you get your own page: all nine "
-         "fixtures, split into still-to-play and played, with your opponents' WhatsApp numbers."),
+         "Open the league site, pick your pair once, and you get your own page: every "
+         "fixture, split into still-to-play and played, with your opponents' WhatsApp numbers."),
         ("Whoever is marked “messages first” starts the chat",
          "They suggest two or three date and time options. Either pair can start it. The rule "
          "only exists so both sides are not sitting waiting for the other."),
@@ -255,6 +255,18 @@ def build():
          "One player enters it on the site, and also posts the score in the WhatsApp group with "
          "the date and time you played. The table updates the moment it is submitted."),
     ]))
+
+    f.append(P("Your division", "h2"))
+    f.append(grid(
+        ["DIVISION", "PAIRS", "YOU PLAY EACH OTHER PAIR", "YOUR MATCHES"],
+        [["Intermediate", "10", "Once", "9"],
+         ["Beginner", "7", "Twice, home and away", "12"]],
+        [38 * mm, 20 * mm, PAGE_W - 2 * MARGIN - 86 * mm, 28 * mm],
+        highlight_col=3))
+    f.append(Spacer(1, 4))
+    f.append(P(
+        "In Beginner the two meetings are separate matches, each scored on its own, and who "
+        "makes first contact swaps between them. They need not be played in order.", "body"))
 
     f.append(P("How a match is played", "h2"))
     f.extend(bullets([
@@ -305,9 +317,9 @@ def build():
 
     f.append(P("Deadlines", "h2"))
     f.extend(bullets([
-        "<b>All nine matches must be finished by Monday 15 December 2026.</b>",
-        "We strongly recommend having <b>at least four played by 15 November</b>. Leaving them to "
-        "the end means fighting everyone else for the same courts.",
+        "<b>Every match must be finished by Monday 15 December 2026.</b>",
+        "We strongly recommend having <b>about half of them played by 15 November</b>. Leaving them "
+        "to the end means fighting everyone else for the same courts.",
     ]))
 
     f.append(P("Substitutes", "h2"))
@@ -344,7 +356,7 @@ def build():
     ]))
 
     # Closing block: where everything lives, with a QR to the site.
-    qr = Image(qr_png, width=30 * mm, height=30 * mm)
+    qr = Image(qr_png, width=24 * mm, height=24 * mm)
     right = [
         Paragraph("Everything is on the league site", S["steph"]),
         Spacer(1, 3),
@@ -356,17 +368,17 @@ def build():
         Spacer(1, 3),
         Paragraph("Pick your pair once and the site remembers you on that phone.", S["small"]),
     ]
-    box = Table([[qr, right]], colWidths=[36 * mm, PAGE_W - 2 * MARGIN - 36 * mm])
+    box = Table([[qr, right]], colWidths=[30 * mm, PAGE_W - 2 * MARGIN - 30 * mm])
     box.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), PAPER),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("LEFTPADDING", (0, 0), (0, 0), 9),
-        ("TOPPADDING", (0, 0), (-1, -1), 10),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 7),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
         ("RIGHTPADDING", (1, 0), (1, 0), 12),
         ("LINEBEFORE", (0, 0), (0, -1), 3, AZURE),
     ]))
-    f.append(Spacer(1, 10))
+    f.append(Spacer(1, 7))
     f.append(KeepTogether(box))
 
     doc.build(f, canvasmaker=NumberedCanvas)
