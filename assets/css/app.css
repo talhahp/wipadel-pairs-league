@@ -717,6 +717,15 @@ table.grid th {
 
 table.grid thead th { text-align: center; vertical-align: bottom; height: 108px; }
 
+/* The empty corner is pinned too, so column names scrolling past do not appear
+   in the strip above the pinned pair names. */
+table.grid thead th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--card);
+}
+
 table.grid thead th span {
   display: inline-block;
   writing-mode: vertical-rl;
@@ -739,6 +748,15 @@ table.grid tbody th {
   max-width: 170px;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  /* Pinned while the grid scrolls sideways. Without this you scroll to your
+     later opponents on a phone and lose track of which row you are reading.
+     The background must be solid, or the cells show through underneath. */
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--card);
+  box-shadow: 1px 0 0 var(--line-soft);
 }
 
 table.grid td {
@@ -1030,6 +1048,9 @@ select {
 
 @media (max-width: 720px) {
   body { font-size: 15px; }
+  table.grid tbody th { max-width: 104px; font-size: 11.5px; padding-right: 7px; }
+  table.grid thead th { height: 92px; }
+  table.grid td { width: 36px; min-width: 36px; }
   .masthead__inner { align-items: flex-start; flex-direction: column; gap: 10px; padding: 20px var(--gutter) 16px; }
   .brand { gap: 11px; }
   .brand__plate { padding: 7px 10px; border-radius: 10px; }

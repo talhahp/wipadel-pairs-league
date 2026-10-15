@@ -12,6 +12,14 @@ import { buildStandings, teamSchedule, divisionProgress, daysUntil,
 
 /* ------------------------------------------------------------ shared pieces */
 
+/** "2nd meeting" and so on, for divisions where pairs meet more than once. */
+function meetingChip(match) {
+  const n = match.meeting || 1;
+  if (n < 2) return '';
+  const ordinal = n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`;
+  return html`<span class="chip chip--azure">${ordinal} meeting</span>`;
+}
+
 /** An in-site link that stays inside the league being viewed. */
 function link(view, query) {
   const league = store.state.leagueId;
@@ -113,6 +121,7 @@ function fixtureCard(match, teamsById, perspective, opts = {}) {
 
   const meta = [];
   meta.push(html`<span class="chip">Round ${match.round}</span>`);
+  if (match.meeting > 1) meta.push(meetingChip(match));
   if (perspective) {
     meta.push(hosting
       ? html`<span class="chip chip--azure">You message first</span>`
@@ -282,6 +291,7 @@ function matchWithContacts(entry, me, settings) {
         <span class="fx__opp">${opp ? opp.name : 'Unknown pair'}</span>
         <div class="fx__note">
           <span class="chip">Round ${entry.match.round}</span>
+          ${meetingChip(entry.match)}
           ${entry.hosting
             ? html`<span class="chip chip--azure">You message first</span>`
             : html`<span class="chip">They message first</span>`}
@@ -677,7 +687,8 @@ export const submitView = {
       const h = byId.get(m.home_team);
       const a = byId.get(m.away_team);
       const mine = myId && (m.home_team === myId || m.away_team === myId) ? '★ ' : '';
-      return `${mine}#${m.match_no}  ${h ? h.name : '?'} v ${a ? a.name : '?'}`;
+      const meeting = (m.meeting || 1) > 1 ? `  (meeting ${m.meeting})` : '';
+      return `${mine}#${m.match_no}  ${h ? h.name : '?'} v ${a ? a.name : '?'}${meeting}`;
     };
 
     return html`
