@@ -701,7 +701,9 @@ td.pts {
 
 .grid-wrap { overflow-x: auto; }
 
-table.grid { font-size: 12px; min-width: 620px; }
+/* Not width:100% like other tables: a full width grid stretches the empty
+   corner cell and shoves the whole thing to the right edge. */
+table.grid { font-size: 12px; width: auto; }
 
 table.grid th {
   position: static;
@@ -759,8 +761,21 @@ table.grid td {
   letter-spacing: -0.04em;
 }
 .cell--self { background: var(--card-sunk); color: var(--muted); }
-.cell--todo { color: var(--muted); }
-.cell--todo::after { content: ''; width: 4px; height: 4px; border-radius: 99px; background: var(--line-hard); }
+/* A fixture that exists but has not been played: a visible marker, so the grid
+   shows its shape from day one rather than looking empty until the first result. */
+.cell--todo { color: var(--muted); background: rgba(61, 148, 255, 0.05); }
+.cell--todo::after {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 99px;
+  background: rgba(61, 148, 255, 0.45);
+}
+
+/* No fixture at all between these two pairs: genuinely blank. */
+.cell--none { background: transparent; }
+
+.legend i.legend-todo { background: rgba(61, 148, 255, 0.45); }
+.legend i.legend-none { background: transparent; box-shadow: inset 0 0 0 1px var(--line-hard); }
 .cell--won { background: rgba(120, 247, 0, 0.13); color: var(--lime); }
 .cell--lost { background: rgba(255, 120, 0, 0.12); color: var(--orange); }
 .cell--mine { outline: 1px solid rgba(61, 148, 255, 0.5); outline-offset: -1px; }
@@ -780,12 +795,6 @@ table.grid td {
 .cell--multi i.cell--lost { background: rgba(255, 120, 0, 0.15); color: var(--orange); }
 .cell--multi i.cell--todo { background: rgba(237, 242, 250, 0.06); }
 
-.grid-axis {
-  writing-mode: horizontal-tb;
-  font-size: 8.5px;
-  color: var(--muted);
-  white-space: nowrap;
-}
 
 .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; font-size: 12.5px; color: var(--muted); }
 .legend i {

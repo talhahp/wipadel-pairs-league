@@ -32,7 +32,12 @@ const ctx = {
   get division() { return division; },
   get query() { return parse(location.hash).query; },
   setDivision(id) { division = id; render(); },
-  go(hash) { location.hash = hash; },
+  go(hash) {
+    // Assigning the hash it already has fires no hashchange, so a view that
+    // navigates to itself (picking your pair on #/my) would never redraw.
+    if (location.hash === hash) render();
+    else location.hash = hash;
+  },
   /** Build a link that stays inside the league being viewed. */
   href(view, query) {
     const league = store.state.leagueId;

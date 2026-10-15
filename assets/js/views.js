@@ -503,14 +503,14 @@ export const gridView = {
       const mine = myId && (rowTeam.id === myId || colTeam.id === myId) ? ' cell--mine' : '';
 
       if (!box.matches.length) {
-        return html`<td><div class="cell cell--todo${raw(mine)}"
-          title="${rowTeam.name} v ${colTeam.name} - not scheduled"></div></td>`;
+        return html`<td><div class="cell cell--none${raw(mine)}"
+          title="${rowTeam.name} v ${colTeam.name} - no fixture"></div></td>`;
       }
 
       // One cell can carry more than one match when pairs meet three or more
       // times, so render every result rather than only the first.
       const parts = box.results.map((r) => {
-        if (!r.played) return { cls: 'cell--todo', text: '', tip: 'still to play' };
+        if (!r.played) return { cls: 'cell--todo', text: '', tip: 'arranged, still to play' };
         if (!r.valid) return { cls: 'cell--todo', text: '!', tip: 'score needs fixing' };
         return {
           cls: r.won ? 'cell--won' : 'cell--lost',
@@ -552,7 +552,7 @@ export const gridView = {
           <table class="grid">
             <thead>
               <tr>
-                <th>${grid.directional ? html`<span class="grid-axis">they start &rarr;</span>` : ''}</th>
+                <th></th>
                 ${teams.map((t) => html`<th><span>${t.name}</span></th>`)}
               </tr>
             </thead>
@@ -569,7 +569,8 @@ export const gridView = {
         <div class="legend">
           <span><i style="background:rgba(120,247,0,.35)"></i>Won</span>
           <span><i style="background:rgba(255,120,0,.35)"></i>Lost</span>
-          <span><i style="background:rgba(237,242,250,.14)"></i>Still to play</span>
+          <span><i class="legend-todo"></i>Fixture still to play</span>
+          <span><i class="legend-none"></i>No fixture</span>
           ${myId ? html`<span><i style="box-shadow:inset 0 0 0 1px #3D94FF"></i>Involves your pair</span>` : ''}
           ${grid.directional
             ? html`<span class="muted">Each pairing appears twice: once in your row, once in your column.</span>`
