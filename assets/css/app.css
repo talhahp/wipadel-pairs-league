@@ -796,7 +796,28 @@ table.grid td {
 .legend i.legend-none { background: transparent; box-shadow: inset 0 0 0 1px var(--line-hard); }
 .cell--won { background: rgba(120, 247, 0, 0.13); color: var(--lime); }
 .cell--lost { background: rgba(255, 120, 0, 0.12); color: var(--orange); }
-.cell--mine { outline: 1px solid rgba(61, 148, 255, 0.5); outline-offset: -1px; }
+/* "Your pair" cannot be azure any more: the unplayed markers are azure, so the
+   highlight disappeared into them. Off-white is used by nothing else here, and
+   reads against both the navy grid and the lime/orange results. */
+.cell--mine {
+  outline: 1px solid rgba(237, 242, 250, 0.42);
+  outline-offset: -1px;
+  background: rgba(237, 242, 250, 0.09);
+}
+
+/* The band is easier to find if its row and column names are marked too. */
+table.grid tbody th.is-me,
+table.grid thead th.is-me {
+  color: var(--text);
+  font-weight: 700;
+}
+table.grid tbody th.is-me { box-shadow: 1px 0 0 var(--line-soft), inset 3px 0 0 var(--text); }
+table.grid thead th.is-me span { text-decoration: underline; text-underline-offset: 3px; }
+
+.legend i.legend-mine {
+  background: rgba(237, 242, 250, 0.09);
+  box-shadow: inset 0 0 0 1px rgba(237, 242, 250, 0.55);
+}
 
 /* Home and away: both meetings share one box, split down the middle. */
 .cell--multi { display: flex; gap: 2px; padding: 2px; }

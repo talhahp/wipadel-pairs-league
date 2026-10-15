@@ -565,13 +565,14 @@ export const gridView = {
             <thead>
               <tr>
                 <th></th>
-                ${teams.map((t) => html`<th><span>${t.name}</span></th>`)}
+                ${teams.map((t) => html`
+                  <th class="${t.id === myId ? 'is-me' : ''}"><span>${t.name}</span></th>`)}
               </tr>
             </thead>
             <tbody>
               ${grid.rows.map((row) => html`
                 <tr>
-                  <th title="${row.team.name}">${row.team.name}</th>
+                  <th class="${row.team.id === myId ? 'is-me' : ''}" title="${row.team.name}">${row.team.name}</th>
                   ${row.cells.map((box, i) => cell(row.team, teams[i], box))}
                 </tr>`)}
             </tbody>
@@ -583,7 +584,7 @@ export const gridView = {
           <span><i style="background:rgba(255,120,0,.35)"></i>Lost</span>
           <span><i class="legend-todo"></i>Fixture still to play</span>
           <span><i class="legend-none"></i>No fixture</span>
-          ${myId ? html`<span><i style="box-shadow:inset 0 0 0 1px #3D94FF"></i>Involves your pair</span>` : ''}
+          ${myId ? html`<span><i class="legend-mine"></i>Involves your pair</span>` : ''}
           ${multi
             ? html`<span class="muted">Each box holds every meeting with that pair.</span>`
             : ''}
