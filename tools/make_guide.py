@@ -15,7 +15,12 @@ the file stays small and there is no font licence to worry about when the guide
 is forwarded around WhatsApp.
 """
 
+import json
 import os
+import re
+import urllib.error
+import urllib.request
+
 import segno
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
@@ -35,6 +40,63 @@ OUT_DIR = os.path.join(ROOT, "assets", "docs")
 OUT = os.path.join(OUT_DIR, "wi-padel-pairs-league-player-guide.pdf")
 LOGO = os.path.join(ROOT, "assets", "img", "wi-padel-logo.png")
 SITE = "https://talhahp.github.io/wipadel-pairs-league/"
+LEAGUE = os.environ.get("LEAGUE", "sherwood")
+
+
+def _config():
+    """Read the Supabase URL and public key out of the site's own config."""
+    try:
+        with open(os.path.join(ROOT, "assets", "js", "config.js"), encoding="utf-8") as fh:
+            txt = fh.read()
+        url = re.search(r"SUPABASE_URL\s*=\s*'([^']*)'", txt)
+        key = re.search(r"SUPABASE_ANON_KEY\s*=\s*'([^']*)'", txt)
+        return (url.group(1) if url else ""), (key.group(1) if key else "")
+    except OSError:
+        return "", ""
+
+
+def _get(path):
+    url, key = _config()
+    if not url or not key:
+        return None
+    req = urllib.request.Request(
+        f"{url}/rest/v1/{path}",
+        headers={"apikey": key, "Authorization": f"Bearer {key}"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def division_rows():
+    """
+    Each division's real shape, read from the live league.
+
+    Hard coding "7 pairs, 12 matches" went stale within a day of being written,
+    because pairs kept joining. Ask the database instead.
+    """
+    try:
+        divisions = _get(f"divisions?select=id,name,meetings,sort_order"
+                         f"&league_id=eq.{LEAGUE}&order=sort_order")
+        teams = _get("teams?select=id,division_id")
+    except (urllib.error.URLError, TimeoutError, ValueError) as e:
+        print(f"  (could not reach the league, leaving the division table out: {e})")
+        return []
+    if divisions is None or teams is None:
+        print("  (no Supabase keys in config.js, leaving the division table out)")
+        return []
+
+    counts = {}
+    for t in teams:
+        counts[t["division_id"]] = counts.get(t["division_id"], 0) + 1
+
+    rows = []
+    for d in divisions:
+        n = counts.get(d["id"], 0)
+        if n < 2:
+            continue
+        meet = d.get("meetings") or 1
+        how = {1: "Once", 2: "Twice, home and away"}.get(meet, f"{meet} times")
+        rows.append([d["name"], str(n), how, str((n - 1) * meet)])
+    return rows
 
 # Brand palette, same values as assets/css/app.css.
 NAVY = colors.HexColor("#000B7A")
@@ -256,17 +318,20 @@ def build():
          "the date and time you played. The table updates the moment it is submitted."),
     ]))
 
-    f.append(P("Your division", "h2"))
-    f.append(grid(
-        ["DIVISION", "PAIRS", "YOU PLAY EACH OTHER PAIR", "YOUR MATCHES"],
-        [["Intermediate", "10", "Once", "9"],
-         ["Beginner", "7", "Twice, home and away", "12"]],
-        [38 * mm, 20 * mm, PAGE_W - 2 * MARGIN - 86 * mm, 28 * mm],
-        highlight_col=3))
-    f.append(Spacer(1, 4))
-    f.append(P(
-        "In Beginner the two meetings are separate matches, each scored on its own, and who "
-        "makes first contact swaps between them. They need not be played in order.", "body"))
+    divisions = division_rows()
+    if divisions:
+        f.append(P("Your division", "h2"))
+        f.append(grid(
+            ["DIVISION", "PAIRS", "YOU PLAY EACH OTHER PAIR", "YOUR MATCHES"],
+            divisions,
+            [38 * mm, 20 * mm, PAGE_W - 2 * MARGIN - 86 * mm, 28 * mm],
+            highlight_col=3))
+        if any("home and away" in r[2] for r in divisions):
+            f.append(Spacer(1, 4))
+            f.append(P(
+                "Where a division plays home and away, the two meetings are separate matches, "
+                "each scored on its own, and who makes first contact swaps between them. They "
+                "need not be played in order.", "body"))
 
     f.append(P("How a match is played", "h2"))
     f.extend(bullets([

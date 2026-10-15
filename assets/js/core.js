@@ -340,6 +340,74 @@ export function matchesPerTeam(teamCount, meetings = 1) {
 
 /* -------------------------------------------------------------------- extras */
 
+/**
+ * Build the "who has played who" grid.
+ *
+ * With a single round robin each pairing is one match, so the grid is
+ * symmetric: A v B and B v A are the same fixture shown from both sides.
+ *
+ * Once pairs meet more than once that breaks down. Keying a cell by the pairing
+ * alone leaves two matches fighting over one box, and the grid quietly shows
+ * only the last one. So for a double round robin the grid becomes directional:
+ * a row holds the matches where that pair made first contact, which gives each
+ * meeting its own cell.
+ *
+ * @returns {{directional: boolean, rows: Array}} one row per team, each with a
+ *          cell per opponent carrying every match that belongs in it.
+ */
+export function crossGrid(teams, matches, meetings = 1) {
+  const directional = (Math.floor(meetings) || 1) > 1;
+
+  // Index once rather than scanning the fixture list per cell.
+  const byOrdered = new Map();
+  const byPairing = new Map();
+  for (const m of matches) {
+    push(byOrdered, `${m.home_team}|${m.away_team}`, m);
+    push(byPairing, [m.home_team, m.away_team].sort().join('|'), m);
+  }
+
+  const rows = teams.map((rowTeam) => ({
+    team: rowTeam,
+    cells: teams.map((colTeam) => {
+      if (rowTeam.id === colTeam.id) return { self: true, matches: [] };
+
+      const found = directional
+        ? (byOrdered.get(`${rowTeam.id}|${colTeam.id}`) || [])
+        : (byPairing.get([rowTeam.id, colTeam.id].sort().join('|')) || []);
+
+      return {
+        self: false,
+        matches: found,
+        results: found.map((m) => cellResult(rowTeam.id, m)),
+      };
+    }),
+  }));
+
+  return { directional, rows };
+}
+
+function push(map, key, value) {
+  if (!map.has(key)) map.set(key, []);
+  map.get(key).push(value);
+}
+
+/** One match read from a given team's point of view. */
+function cellResult(teamId, match) {
+  if (match.status !== 'completed') {
+    return { played: false, won: null, points: null, valid: true, match };
+  }
+  const s = scoreMatch(match);
+  if (!s.ok) return { played: true, won: null, points: null, valid: false, match };
+  const isHome = match.home_team === teamId;
+  return {
+    played: true,
+    valid: true,
+    won: isHome ? s.homeWon : !s.homeWon,
+    points: isHome ? s.pointsHome : s.pointsAway,
+    match,
+  };
+}
+
 /** Progress summary for a division. */
 export function divisionProgress(teams, matches) {
   const total = matches.length;

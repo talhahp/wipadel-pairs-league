@@ -7,7 +7,7 @@ import { html, raw, mount, stat, empty, notice, flash, errorText,
          shortDate, longDate, signed, plural, waLink, dialable, formData } from './ui.js';
 import * as store from './store.js';
 import { buildStandings, teamSchedule, divisionProgress, daysUntil,
-         scoreMatch, formatScoreline, fixtureCount, matchesPerTeam,
+         scoreMatch, formatScoreline, crossGrid, fixtureCount, matchesPerTeam,
          SCORING, TIEBREAKERS } from './core.js';
 
 /* ------------------------------------------------------------ shared pieces */
@@ -483,6 +483,8 @@ export const gridView = {
   render(ctx) {
     const teams = store.divisionTeams(ctx.division);
     const matches = store.divisionMatches(ctx.division);
+    const division = store.findDivision(ctx.division);
+    const meetings = division?.meetings || 1;
     const myId = store.getMyTeamId();
 
     if (teams.length < 2) {
@@ -493,32 +495,39 @@ export const gridView = {
         </section>`;
     }
 
-    // Look up a match by the unordered pair.
-    const key = (a, b) => [a, b].sort().join('|');
-    const map = new Map(matches.map((m) => [key(m.home_team, m.away_team), m]));
+    const grid = crossGrid(teams, matches, meetings);
 
-    const cell = (rowTeam, colTeam) => {
-      if (rowTeam.id === colTeam.id) return html`<td><div class="cell cell--self">&middot;</div></td>`;
-      const m = map.get(key(rowTeam.id, colTeam.id));
-      if (!m) return html`<td><div class="cell cell--todo" title="Not scheduled"></div></td>`;
+    const cell = (rowTeam, colTeam, box) => {
+      if (box.self) return html`<td><div class="cell cell--self">&middot;</div></td>`;
 
       const mine = myId && (rowTeam.id === myId || colTeam.id === myId) ? ' cell--mine' : '';
-      if (m.status !== 'completed') {
+
+      if (!box.matches.length) {
         return html`<td><div class="cell cell--todo${raw(mine)}"
-          title="${rowTeam.name} v ${colTeam.name} - still to play"></div></td>`;
+          title="${rowTeam.name} v ${colTeam.name} - not scheduled"></div></td>`;
       }
 
-      const s = scoreMatch(m);
-      if (!s.ok) {
-        return html`<td><div class="cell cell--todo${raw(mine)}" title="Score needs fixing">!</div></td>`;
+      // One cell can carry more than one match when pairs meet three or more
+      // times, so render every result rather than only the first.
+      const parts = box.results.map((r) => {
+        if (!r.played) return { cls: 'cell--todo', text: '', tip: 'still to play' };
+        if (!r.valid) return { cls: 'cell--todo', text: '!', tip: 'score needs fixing' };
+        return {
+          cls: r.won ? 'cell--won' : 'cell--lost',
+          text: String(r.points),
+          tip: `${formatScoreline(r.match)} (${r.points} pts)`,
+        };
+      });
+
+      const tip = `${rowTeam.name} v ${colTeam.name}: ` +
+                  parts.map((p) => p.tip).join('  |  ');
+
+      if (parts.length === 1) {
+        return html`<td><div class="cell ${parts[0].cls}${raw(mine)}" title="${tip}">${parts[0].text}</div></td>`;
       }
-      const rowIsHome = m.home_team === rowTeam.id;
-      const rowWon = rowIsHome ? s.homeWon : !s.homeWon;
-      // Points, not sets: a tie-break match is 1-1 on sets for both pairs, which
-      // would read the same whether you won it or lost it.
-      const pts = rowIsHome ? s.pointsHome : s.pointsAway;
-      return html`<td><div class="cell ${rowWon ? 'cell--won' : 'cell--lost'}${raw(mine)}"
-        title="${rowTeam.name} v ${colTeam.name}: ${formatScoreline(m)} (${pts} pts)">${pts}</div></td>`;
+      return html`<td><div class="cell cell--multi${raw(mine)}" title="${tip}">
+        ${parts.map((p) => html`<i class="${p.cls}">${p.text}</i>`)}
+      </div></td>`;
     };
 
     return html`
@@ -528,8 +537,14 @@ export const gridView = {
         <div class="section-head">
           <div>
             <h2>Who has played who</h2>
-            <p>Read across your own row. A filled box means it is done; an empty one is still to arrange.
-               The figure is the points that row's pair took from the match - hover for the full score.</p>
+            ${grid.directional
+              ? html`<p>This division plays home and away, so every pairing has two matches and
+                       each one gets its own box. <strong>Read along your own row for the matches
+                       you start</strong>, and down your own column for the ones they start.
+                       The figure is the points you took.</p>`
+              : html`<p>Read across your own row. A filled box means it is done; an empty one is
+                       still to arrange. The figure is the points that row's pair took from the
+                       match. Hover for the full score.</p>`}
           </div>
         </div>
 
@@ -537,15 +552,15 @@ export const gridView = {
           <table class="grid">
             <thead>
               <tr>
-                <th></th>
+                <th>${grid.directional ? html`<span class="grid-axis">they start &rarr;</span>` : ''}</th>
                 ${teams.map((t) => html`<th><span>${t.name}</span></th>`)}
               </tr>
             </thead>
             <tbody>
-              ${teams.map((rowTeam) => html`
+              ${grid.rows.map((row) => html`
                 <tr>
-                  <th title="${rowTeam.name}">${rowTeam.name}</th>
-                  ${teams.map((colTeam) => cell(rowTeam, colTeam))}
+                  <th title="${row.team.name}">${row.team.name}</th>
+                  ${row.cells.map((box, i) => cell(row.team, teams[i], box))}
                 </tr>`)}
             </tbody>
           </table>
@@ -556,6 +571,9 @@ export const gridView = {
           <span><i style="background:rgba(255,120,0,.35)"></i>Lost</span>
           <span><i style="background:rgba(237,242,250,.14)"></i>Still to play</span>
           ${myId ? html`<span><i style="box-shadow:inset 0 0 0 1px #3D94FF"></i>Involves your pair</span>` : ''}
+          ${grid.directional
+            ? html`<span class="muted">Each pairing appears twice: once in your row, once in your column.</span>`
+            : ''}
         </div>
       </section>`;
   },
