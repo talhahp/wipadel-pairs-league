@@ -25,7 +25,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 
-<link rel="stylesheet" href="assets/css/app.css?v=1">
+<!--
+  No ?v= stamp here either. It was never bumped on a CSS change, so it busted
+  nothing, and a stamp that is maintained on the stylesheet but not on the
+  modules is worse than none: the two could come from different deploys. Both
+  now ride the same ten minute cache and refresh together.
+-->
+<link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body>
 
@@ -74,8 +80,7 @@
   busts app.js; the browser resolves its imports (core.js, views.js, ...) without
   it, so a stamped entry beside unstamped imports could load new code against old
   modules. GitHub Pages serves assets with max-age=600, so every file refreshes
-  within ten minutes of a deploy and the set stays consistent. app.css is stamped
-  because it is a single file with no import graph.
+  within ten minutes of a deploy and the set stays consistent.
 -->
 <script type="module" src="assets/js/app.js"></script>
 
