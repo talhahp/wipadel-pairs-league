@@ -15,6 +15,7 @@ the file stays small and there is no font licence to worry about when the guide
 is forwarded around WhatsApp.
 """
 
+import datetime
 import json
 import os
 import re
@@ -41,6 +42,11 @@ OUT = os.path.join(OUT_DIR, "wi-padel-pairs-league-player-guide.pdf")
 LOGO = os.path.join(ROOT, "assets", "img", "wi-padel-logo.png")
 SITE = "https://talhahp.github.io/wipadel-pairs-league/"
 LEAGUE = os.environ.get("LEAGUE", "sherwood")
+
+# Pair counts come from the live league at build time, so a printed copy is a
+# snapshot. Stamping it means an old sheet in someone's bag is recognisable.
+_today = datetime.date.today()
+BUILT_ON = f"{_today.day} {_today:%B %Y}"
 
 
 def _config():
@@ -230,7 +236,8 @@ class NumberedCanvas(pdfcanvas.Canvas):
         self.setFont("Helvetica", 7.6)
         self.setFillColor(GREY)
         self.drawString(MARGIN, 11 * mm,
-                        "Wi Padel Sherwood Pairs League  ·  15 October – 15 December 2026")
+                        "Wi Padel Sherwood Pairs League  ·  15 October – 15 December 2026"
+                        "  ·  figures as at " + BUILT_ON)
         self.drawRightString(PAGE_W - MARGIN, 11 * mm, f"Page {self._pageNumber} of {total}")
         self.setStrokeColor(RULE)
         self.setLineWidth(0.5)
