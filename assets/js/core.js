@@ -343,37 +343,42 @@ export function matchesPerTeam(teamCount, meetings = 1) {
 /**
  * Build the "who has played who" grid.
  *
- * With a single round robin each pairing is one match, so the grid is
- * symmetric: A v B and B v A are the same fixture shown from both sides.
+ * A cell holds EVERY match between those two pairs, not one of them. That
+ * matters as soon as a division plays home and away: with eight pairs meeting
+ * twice you have fourteen matches, and you should see all fourteen by reading
+ * across your own row.
  *
- * Once pairs meet more than once that breaks down. Keying a cell by the pairing
- * alone leaves two matches fighting over one box, and the grid quietly shows
- * only the last one. So for a double round robin the grid becomes directional:
- * a row holds the matches where that pair made first contact, which gives each
- * meeting its own cell.
+ * Two earlier shapes were wrong. Keying a cell by the pairing and storing a
+ * single match silently dropped the second meeting. Making the grid directional
+ * showed all of them, but split your fourteen across your row and your column,
+ * so your row still showed seven and the division looked like a single round
+ * robin. Both meetings belong in the same box.
  *
- * @returns {{directional: boolean, rows: Array}} one row per team, each with a
- *          cell per opponent carrying every match that belongs in it.
+ * Results are read from the row team's point of view, and each carries whether
+ * that team was the one due to make first contact.
+ *
+ * @returns {{maxPerCell: number, rows: Array}} one row per team, each with a
+ *          cell per opponent carrying every match between them.
  */
-export function crossGrid(teams, matches, meetings = 1) {
-  const directional = (Math.floor(meetings) || 1) > 1;
-
-  // Index once rather than scanning the fixture list per cell.
-  const byOrdered = new Map();
+export function crossGrid(teams, matches) {
   const byPairing = new Map();
   for (const m of matches) {
-    push(byOrdered, `${m.home_team}|${m.away_team}`, m);
     push(byPairing, [m.home_team, m.away_team].sort().join('|'), m);
   }
+
+  let maxPerCell = 0;
 
   const rows = teams.map((rowTeam) => ({
     team: rowTeam,
     cells: teams.map((colTeam) => {
-      if (rowTeam.id === colTeam.id) return { self: true, matches: [] };
+      if (rowTeam.id === colTeam.id) return { self: true, matches: [], results: [] };
 
-      const found = directional
-        ? (byOrdered.get(`${rowTeam.id}|${colTeam.id}`) || [])
-        : (byPairing.get([rowTeam.id, colTeam.id].sort().join('|')) || []);
+      const found = (byPairing.get([rowTeam.id, colTeam.id].sort().join('|')) || [])
+        .slice()
+        .sort((a, b) => (a.meeting || 1) - (b.meeting || 1)
+                     || (a.match_no || 0) - (b.match_no || 0));
+
+      if (found.length > maxPerCell) maxPerCell = found.length;
 
       return {
         self: false,
@@ -383,7 +388,7 @@ export function crossGrid(teams, matches, meetings = 1) {
     }),
   }));
 
-  return { directional, rows };
+  return { maxPerCell, rows };
 }
 
 function push(map, key, value) {
@@ -393,17 +398,23 @@ function push(map, key, value) {
 
 /** One match read from a given team's point of view. */
 function cellResult(teamId, match) {
+  const hosting = match.home_team === teamId;
+  const meeting = match.meeting || 1;
+
   if (match.status !== 'completed') {
-    return { played: false, won: null, points: null, valid: true, match };
+    return { played: false, won: null, points: null, valid: true, hosting, meeting, match };
   }
   const s = scoreMatch(match);
-  if (!s.ok) return { played: true, won: null, points: null, valid: false, match };
-  const isHome = match.home_team === teamId;
+  if (!s.ok) {
+    return { played: true, won: null, points: null, valid: false, hosting, meeting, match };
+  }
   return {
     played: true,
     valid: true,
-    won: isHome ? s.homeWon : !s.homeWon,
-    points: isHome ? s.pointsHome : s.pointsAway,
+    won: hosting ? s.homeWon : !s.homeWon,
+    points: hosting ? s.pointsHome : s.pointsAway,
+    hosting,
+    meeting,
     match,
   };
 }

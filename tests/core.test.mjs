@@ -474,77 +474,75 @@ test('fixtureCount and matchesPerTeam agree with the generated list', () => {
 
 /* --------------------------------------------------------------- cross grid */
 
-test('a single round robin grid is symmetric and holds one match per pairing', () => {
+test('a single round robin grid holds one match per pairing, both sides', () => {
   const teams = [T('a', 'A'), T('b', 'B'), T('c', 'C')];
   const matches = buildFixtures('d', ['a', 'b', 'c'], 1)
     .map((f) => Object.assign({}, f, { id: 'm' + f.match_no }));
-  const grid = crossGrid(teams, matches, 1);
+  const grid = crossGrid(teams, matches);
 
-  assert.equal(grid.directional, false);
-  assert.equal(grid.rows.length, 3);
+  assert.equal(grid.maxPerCell, 1);
   for (const row of grid.rows) {
     for (const cell of row.cells) {
-      assert.equal(cell.matches.length, cell.self ? 0 : 1,
-        'every off-diagonal cell holds exactly one match');
+      assert.equal(cell.matches.length, cell.self ? 0 : 1);
     }
   }
-  // The same fixture appears on both sides of the diagonal.
   assert.equal(grid.rows[0].cells[1].matches[0].id, grid.rows[1].cells[0].matches[0].id);
 });
 
-test('a home and away grid gives each meeting its own cell', () => {
-  // The bug this guards: keyed by pairing alone, the second meeting overwrote
-  // the first and half the season vanished from the grid.
-  const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+test('home and away puts BOTH meetings in one cell, so a row shows every match', () => {
+  // The bug this guards: eight pairs meeting twice is 14 matches each, but the
+  // grid showed seven per row and read like a single round robin.
+  const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
   const teams = ids.map((id) => T(id, id.toUpperCase()));
   const matches = buildFixtures('beginner', ids, 2)
     .map((f) => Object.assign({}, f, { id: 'm' + f.match_no }));
 
-  assert.equal(matches.length, 42);
-  const grid = crossGrid(teams, matches, 2);
-  assert.equal(grid.directional, true);
+  assert.equal(matches.length, 56);
+  const grid = crossGrid(teams, matches);
+  assert.equal(grid.maxPerCell, 2, 'two meetings share a cell');
 
-  let shown = 0;
-  const seen = new Set();
   for (const row of grid.rows) {
+    const mine = row.cells.reduce((n, c) => n + c.matches.length, 0);
+    assert.equal(mine, 14, `${row.team.name} should see all 14 of its matches in its own row`);
     for (const cell of row.cells) {
-      if (cell.self) {
-        assert.equal(cell.matches.length, 0);
-        continue;
-      }
-      assert.equal(cell.matches.length, 1,
-        'each cell holds exactly one of the two meetings');
-      shown++;
-      seen.add(cell.matches[0].id);
+      if (cell.self) continue;
+      assert.equal(cell.matches.length, 2, 'each opponent cell holds both meetings');
+      // One each way: you start one of them, they start the other.
+      const hosting = cell.results.map((r) => r.hosting).sort();
+      assert.deepEqual(hosting, [false, true], 'first contact is shared across the two');
     }
   }
-  assert.equal(shown, 42, 'every one of the 42 matches gets a cell');
-  assert.equal(seen.size, 42, 'and no match is shown twice');
+
+  const everyCell = grid.rows.flatMap((r) => r.cells.flatMap((c) => c.matches.map((m) => m.id)));
+  assert.equal(new Set(everyCell).size, 56, 'all 56 matches appear');
+  assert.equal(everyCell.length, 112, 'and each appears once per side of the grid');
 });
 
-test('a directional cell only holds matches where that row made first contact', () => {
-  const teams = [T('a', 'A'), T('b', 'B')];
-  const matches = [
-    { id: 'm1', home_team: 'a', away_team: 'b', status: 'pending' },
-    { id: 'm2', home_team: 'b', away_team: 'a', status: 'pending' },
-  ];
-  const grid = crossGrid(teams, matches, 2);
-  assert.deepEqual(grid.rows[0].cells[1].matches.map((m) => m.id), ['m1']);
-  assert.deepEqual(grid.rows[1].cells[0].matches.map((m) => m.id), ['m2']);
+test('cells list the meetings in order', () => {
+  const ids = ['a', 'b', 'c', 'd'];
+  const matches = buildFixtures('d', ids, 2).map((f) => Object.assign({}, f, { id: 'm' + f.match_no }));
+  const grid = crossGrid(ids.map((i) => T(i, i)), matches);
+  for (const row of grid.rows) {
+    for (const cell of row.cells) {
+      if (cell.self) continue;
+      assert.deepEqual(cell.results.map((r) => r.meeting), [1, 2]);
+    }
+  }
 });
 
 test('grid cells read the result from the row team point of view', () => {
   const teams = [T('a', 'A'), T('b', 'B')];
   const matches = [done('a', 'b', { s1_home: 6, s1_away: 4, s2_home: 3, s2_away: 6, stb_home: 10, stb_away: 8 })];
-  const grid = crossGrid(teams, matches, 1);
+  const grid = crossGrid(teams, matches);
 
   const aCell = grid.rows[0].cells[1].results[0];
   const bCell = grid.rows[1].cells[0].results[0];
   assert.equal(aCell.won, true);
   assert.equal(aCell.points, 2);
+  assert.equal(aCell.hosting, true);
   assert.equal(bCell.won, false);
   assert.equal(bCell.points, 1);
-  assert.equal(aCell.played, true);
+  assert.equal(bCell.hosting, false);
 });
 
 test('an unplayed fixture and a corrupt one are both marked, not dropped', () => {
@@ -553,7 +551,7 @@ test('an unplayed fixture and a corrupt one are both marked, not dropped', () =>
     { id: 'p', home_team: 'a', away_team: 'b', status: 'pending' },
     done('a', 'c', { s1_home: 6, s1_away: 5, s2_home: 6, s2_away: 2 }), // illegal set
   ];
-  const grid = crossGrid(teams, matches, 1);
+  const grid = crossGrid(teams, matches);
   const pending = grid.rows[0].cells[1].results[0];
   const broken = grid.rows[0].cells[2].results[0];
   assert.equal(pending.played, false);
@@ -562,12 +560,19 @@ test('an unplayed fixture and a corrupt one are both marked, not dropped', () =>
   assert.equal(broken.points, null);
 });
 
-test('three meetings put two matches in one directional cell rather than losing one', () => {
+test('a pairing with no fixture leaves an empty cell', () => {
+  const teams = [T('a', 'A'), T('b', 'B'), T('c', 'C')];
+  const grid = crossGrid(teams, [{ id: 'm', home_team: 'a', away_team: 'b', status: 'pending' }]);
+  assert.equal(grid.rows[0].cells[2].matches.length, 0, 'A never meets C');
+  assert.equal(grid.rows[2].cells[0].matches.length, 0);
+});
+
+test('three meetings all land in the same cell', () => {
   const ids = ['a', 'b', 'c'];
-  const teams = ids.map((id) => T(id, id));
   const matches = buildFixtures('d', ids, 3).map((f) => Object.assign({}, f, { id: 'm' + f.match_no }));
-  const grid = crossGrid(teams, matches, 3);
-  const total = grid.rows.reduce((n, r) => n + r.cells.reduce((k, c) => k + c.matches.length, 0), 0);
-  assert.equal(matches.length, 9);
-  assert.equal(total, 9, 'all nine matches are still reachable in the grid');
+  const grid = crossGrid(ids.map((i) => T(i, i)), matches);
+  assert.equal(grid.maxPerCell, 3);
+  for (const row of grid.rows) {
+    assert.equal(row.cells.reduce((n, c) => n + c.matches.length, 0), 6, 'each pair plays 6');
+  }
 });
