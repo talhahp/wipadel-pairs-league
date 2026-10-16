@@ -1,7 +1,8 @@
 """
 Builds the two-page player guide PDF.
 
-    python tools/make_guide.py
+    python tools/make_guide.py                  # the sherwood guide
+    LEAGUE=scottburgh python tools/make_guide.py   # another league's guide
 
 Output: assets/docs/wi-padel-pairs-league-player-guide.pdf
 
@@ -38,7 +39,7 @@ from reportlab.platypus import (
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 OUT_DIR = os.path.join(ROOT, "assets", "docs")
-OUT = os.path.join(OUT_DIR, "wi-padel-pairs-league-player-guide.pdf")
+OUT = os.path.join(OUT_DIR, f"player-guide-{os.environ.get('LEAGUE', 'sherwood')}.pdf")
 LOGO = os.path.join(ROOT, "assets", "img", "wi-padel-logo.png")
 SITE = "https://talhahp.github.io/wipadel-pairs-league/"
 LEAGUE = os.environ.get("LEAGUE", "sherwood")
@@ -47,6 +48,10 @@ LEAGUE = os.environ.get("LEAGUE", "sherwood")
 # snapshot. Stamping it means an old sheet in someone's bag is recognisable.
 _today = datetime.date.today()
 BUILT_ON = f"{_today.day} {_today:%B %Y}"
+
+LG = None            # the league row; filled in build()
+FOOTER_LINE = ''     # page furniture, built once the league is known
+SUBTITLE_LINE = ''
 
 
 def _config():
@@ -70,6 +75,37 @@ def _get(path):
         headers={"apikey": key, "Authorization": f"Bearer {key}"})
     with urllib.request.urlopen(req, timeout=30) as r:
         return json.loads(r.read().decode("utf-8"))
+
+
+def league_info():
+    """
+    The league being built, from the database.
+
+    Everything venue-specific lives here rather than in this file: Scottburgh
+    has a different venue, discount and season from Sherwood, and a guide that
+    hard coded one club's details was wrong for the other.
+    """
+    fallback = {
+        "name": "Wi Padel Pairs League", "venue": "the club",
+        "season_start": None, "season_end": None, "promo_discount": None,
+    }
+    try:
+        rows = _get(f"leagues?select=name,venue,season_start,season_end,promo_discount"
+                    f"&id=eq.{LEAGUE}")
+    except (urllib.error.URLError, TimeoutError, ValueError) as e:
+        print(f"  (could not reach the league, using neutral wording: {e})")
+        return fallback
+    if not rows:
+        return fallback
+    return rows[0]
+
+
+def pretty(iso):
+    """2026-12-31 -> 31 December 2026."""
+    if not iso:
+        return ""
+    d = datetime.date.fromisoformat(iso)
+    return f"{d.day} {d:%B %Y}"
 
 
 def division_rows():
@@ -235,9 +271,7 @@ class NumberedCanvas(pdfcanvas.Canvas):
         self.saveState()
         self.setFont("Helvetica", 7.6)
         self.setFillColor(GREY)
-        self.drawString(MARGIN, 11 * mm,
-                        "Wi Padel Sherwood Pairs League  ·  15 October – 15 December 2026"
-                        "  ·  figures as at " + BUILT_ON)
+        self.drawString(MARGIN, 11 * mm, FOOTER_LINE)
         self.drawRightString(PAGE_W - MARGIN, 11 * mm, f"Page {self._pageNumber} of {total}")
         self.setStrokeColor(RULE)
         self.setLineWidth(0.5)
@@ -264,8 +298,7 @@ def decorate(canvas, doc):
     canvas.drawString(x, top - 11 * mm, "PAIRS LEAGUE")
     canvas.setFillColor(GREY)
     canvas.setFont("Helvetica", 9.4)
-    canvas.drawString(x, top - 15.5 * mm,
-                      "Player guide  ·  Wi Padel Sherwood  ·  15 October – 15 December 2026")
+    canvas.drawString(x, top - 15.5 * mm, SUBTITLE_LINE)
 
     y = top - logo_h - 2 * mm
     canvas.setStrokeColor(NAVY)
@@ -282,6 +315,15 @@ def decorate(canvas, doc):
 # ----------------------------------------------------------------- build
 
 def build():
+    global LG, FOOTER_LINE, SUBTITLE_LINE
+    LG = league_info()
+
+    season = ""
+    if LG.get("season_start") and LG.get("season_end"):
+        season = f"  ·  {pretty(LG['season_start'])} – {pretty(LG['season_end'])}"
+    FOOTER_LINE = f"{LG['name']}{season}  ·  figures as at {BUILT_ON}"
+    SUBTITLE_LINE = f"Player guide  ·  {LG['venue']}{season}"
+
     os.makedirs(OUT_DIR, exist_ok=True)
 
     qr_png = os.path.join(HERE, "_qr.png")
@@ -292,8 +334,8 @@ def build():
         OUT, pagesize=A4,
         leftMargin=MARGIN, rightMargin=MARGIN,
         topMargin=MARGIN, bottomMargin=20 * mm,
-        title="Wi Padel Sherwood Pairs League - Player Guide",
-        author="Wi Padel Sherwood",
+        title=f"{LG['name']} - Player Guide",
+        author=LG["venue"],
         subject="League format, scoring and rules",
     )
     frame = Frame(MARGIN, 20 * mm, PAGE_W - 2 * MARGIN,
@@ -302,11 +344,12 @@ def build():
     doc.addPageTemplates([PageTemplate(id="page", frames=[frame], onPage=decorate)])
 
     f = []
+    ends = pretty(LG.get("season_end"))
     f.append(callout(
         "<b>Play when you want, compete when you can.</b> Every pair plays every other pair "
         "in their division. There is no set order and no fixed night: you arrange each match "
-        "directly with your opponents and play it whenever suits you both, as long as they "
-        "are all done by 15 December."))
+        "directly with your opponents and play it whenever suits you both"
+        + (f", as long as they are all done by {ends}." if ends else ".")))
     f.append(Spacer(1, 4))
 
     f.append(P("Getting a match played", "h2"))
@@ -318,8 +361,9 @@ def build():
          "They suggest two or three date and time options. Either pair can start it. The rule "
          "only exists so both sides are not sitting waiting for the other."),
         ("Book a 90-minute court",
-         "Either pair books at Wi Padel Sherwood on Playtomic. All league bookings are 20% off "
-         "automatically; there is no code to enter."),
+         f"Either pair books at {LG['venue']} on Playtomic."
+         + (f" All league bookings are {LG['promo_discount']} off automatically; "
+            "there is no code to enter." if LG.get("promo_discount") else "")),
         ("Submit the score, then post it in the group",
          "One player enters it on the site, and also posts the score in the WhatsApp group with "
          "the date and time you played. The table updates the moment it is submitted."),
@@ -389,9 +433,10 @@ def build():
 
     f.append(P("Deadlines", "h2"))
     f.extend(bullets([
-        "<b>Every match must be finished by Monday 15 December 2026.</b>",
-        "We strongly recommend having <b>about half of them played by 15 November</b>. Leaving them "
-        "to the end means fighting everyone else for the same courts.",
+        (f"<b>Every match must be finished by {pretty(LG['season_end'])}.</b>"
+         if LG.get("season_end") else "<b>Every match must be finished by the end of the season.</b>"),
+        "We strongly recommend having <b>about half of them played by the halfway point</b>. "
+        "Leaving them to the end means fighting everyone else for the same courts.",
     ]))
 
     f.append(P("Substitutes", "h2"))

@@ -89,15 +89,27 @@ function renderNav() {
   });
 }
 
+/** "Wi Padel Scottburgh" -> "Scottburgh": the logo already says Wi Padel. */
+function shortVenue(venue) {
+  return String(venue || '').replace(/^\s*Wi\s*Padel\s*/i, '').trim() || venue || '';
+}
+
 function renderChrome() {
   const league = store.state.league;
   const meta = document.getElementById('masthead-meta');
 
+  // The site name is fixed; the line under it names the league being viewed,
+  // so the header is never a different venue's name.
+  const sub = document.getElementById('brand-league');
+  if (sub) sub.textContent = league ? shortVenue(league.venue) : BRAND.short;
+
+  document.title = league
+    ? `${shortVenue(league.venue)} - ${BRAND.site}`
+    : BRAND.site;
+
   const bits = [];
   if (league?.season_start && league?.season_end) {
     bits.push(`${shortSeason(league.season_start)} - ${shortSeason(league.season_end)}`);
-  } else {
-    bits.push(BRAND.season);
   }
   if (league?.promo_discount) bits.push(`${league.promo_discount} off court bookings`);
   if (!store.isLive()) bits.push('Demo mode');
@@ -121,8 +133,7 @@ function renderChrome() {
 
   const foot = document.getElementById('foot-right');
   mount(foot, html`${league?.season_end ? `Season ends ${longDate(league.season_end)}` : ''}`);
-  document.getElementById('foot-left').textContent =
-    league ? league.name : `${BRAND.club} ${BRAND.league}`;
+  document.getElementById('foot-left').textContent = league ? league.name : BRAND.site;
 }
 
 function shortSeason(iso) {

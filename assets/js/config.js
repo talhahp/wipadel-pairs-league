@@ -15,9 +15,11 @@
 export const SUPABASE_URL = 'https://kgeoxlkuiarsxeyjswxq.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_UNir-PFZhtRWC8zwXG_Xig_6_PR92eB';
 
-/** Shown in the header and the browser tab. */
+/**
+ * The site, not any one league. Venue, season and dates come from whichever
+ * league is being viewed, so nothing here names a club.
+ */
 export const BRAND = {
-  club: 'Wi Padel Sherwood',
-  league: 'Pairs League',
-  season: '15 Oct - 15 Dec 2026',
+  site: 'Wi Padel Leagues and Events',
+  short: 'Leagues & Events',
 };
